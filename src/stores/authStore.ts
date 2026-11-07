@@ -9,7 +9,10 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<any>(savedUser ? JSON.parse(savedUser) : null)
 
   async function login(email: string, password: string): Promise<void> {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+    // Obtenemos la URL y le quitamos la barra final si la tiene por error
+    const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+    const API_URL = rawApiUrl.replace(/\/+$/, '')
+    
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
