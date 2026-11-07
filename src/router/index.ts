@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LigaDashboard from '../views/ligaDashBoard.vue'
 import LoginView from '../views/LoginView.vue'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore.ts'
 import UsuariosView from '@/views/UsuariosView.vue'
 
 const router = createRouter({

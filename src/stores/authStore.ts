@@ -2,11 +2,14 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('token') || '')
-  const user = ref(JSON.parse(localStorage.getItem('user')) || null)
+  const token = ref<string>(localStorage.getItem('token') || '')
+  
+  // Tipamos explícitamente el usuario o permitimos null/any para evitar conflictos
+  const savedUser = localStorage.getItem('user')
+  const user = ref<any>(savedUser ? JSON.parse(savedUser) : null)
 
-  async function login(email, password) {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  async function login(email: string, password: string): Promise<void> {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(data.user))
   }
 
-  function logout() {
+  function logout(): void {
     token.value = ''
     user.value = null
     localStorage.removeItem('token')
