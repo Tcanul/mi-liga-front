@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-const API_LIGAS_URL = 'http://localhost:4000/api/ligas'
-const API_EQUIPOS_URL = 'http://localhost:4000/api/equipos'
-const API_PARTIDOS_URL = 'http://localhost:4000/api/partidos'
-const API_JUGADORES_URL = 'http://localhost:4000/api/jugadores'
+const API_LIGAS_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/ligas'
+const API_EQUIPOS_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/equipos'
+const API_PARTIDOS_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/partidos'
+const API_JUGADORES_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/jugadores'
 
 export const useLigaStore = defineStore('liga', () => {
   const ligas = ref([])
@@ -220,7 +220,8 @@ export const useLigaStore = defineStore('liga', () => {
   }
   async function obtenerJugadoresPorEquipo(equipoId) {
   try {
-    const res = await fetch(`http://localhost:4000/api/equipos/${equipoId}/jugadores`)
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/equipos/${equipoId}/jugadores`)
     if (res.ok) {
       jugadores.value = await res.json()
     } else {
@@ -275,7 +276,8 @@ async function eliminarJugador(id, equipoId) {
 
 async function obtenerGoleadores(ligaId) {
   try {
-    const res = await fetch(`http://localhost:4000/api/ligas/${ligaId}/goleadores`)
+     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/ligas/${ligaId}/goleadores`)
     if (res.ok) {
       const data = await res.json() // 👈 Asegúrate de que 'data' esté declarada aquí con const o let
       goleadoresTop.value = data

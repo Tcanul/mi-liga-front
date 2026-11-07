@@ -248,7 +248,8 @@ function ingresarALiga(liga) {
 
 async function obtenerTodosLosEquiposGlobales() {
   try {
-    const res = await fetch('http://localhost:4000/api/equipos-globales')
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/equipos-globales`)
     if (res.ok) {
       equiposGlobales.value = await res.json()
     }
