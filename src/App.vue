@@ -1,5 +1,5 @@
 <template>
-  <div id="app" style="background-color:#31313269">
+  <div id="app">
     <!-- Navbar superior condicional (Solo se muestra si hay sesión) -->
     <nav v-if="authStore.user" class="navbar">
       <div class="nav-brand">🏆 Sistema Ligas</div>

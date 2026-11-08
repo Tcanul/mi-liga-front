@@ -8,21 +8,23 @@
         <h1>Administración de Ligas</h1>
         <p>Controla torneos, inscripciones y calendarios de forma centralizada.</p>
         
-        <button 
-          v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'" 
-          class="btn-back" style="margin-right: 5%;"
-          @click="router.push('/usuarios')"
-        > Gestion Usuarios
-        </button>
+        <div class="hero-buttons">
+          <button 
+            v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'" 
+            class="btn-back"
+            @click="router.push('/usuarios')"
+          > Gestionar Usuarios
+          </button>
 
-        <!-- Botón para Crear Liga (Solo Admin y Dueño de Liga) -->
-        <button 
-          v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'"
-          class="btn-hero" 
-          @click="abrirModalCrear"
-        >
-          <span>+</span> Crear Nueva Liga
-        </button>
+          <!-- Botón para Crear Liga (Solo Admin y Dueño de Liga) -->
+          <button 
+            v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'"
+            class="btn-hero" 
+            @click="abrirModalCrear"
+          >
+            <span>+</span> Crear Nueva Liga
+          </button>
+        </div>
       </div>
     </header>
 
@@ -42,42 +44,41 @@
     </div>
 
     <!-- Grilla de Ligas -->
-<div class="ligas-grid">
-  <div 
-    v-for="liga in ligasVisibles" 
-    :key="liga.id" 
-    :class="['liga-card', (authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)) ? 'disabled-card' : '']" 
-    style="padding: 10px;"
-  >
-    <div class="liga-info" @click="ingresarALiga(liga)" style="cursor: pointer;">
-      <h3>{{ liga.nombre }}</h3>
-      <p class="categoria">Categoría: <strong>{{ liga.categoria }}</strong></p>
-      <p class="equipos-count">⚽ Equipos inscritos: {{ liga.totalEquipos || 0 }}</p>
-    </div>
+    <div class="ligas-grid">
+      <div 
+        v-for="liga in ligasVisibles" 
+        :key="liga.id" 
+        :class="['liga-card', (authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)) ? 'disabled-card' : '']"
+      >
+        <div class="liga-info" @click="ingresarALiga(liga)" style="cursor: pointer;">
+          <h3>{{ liga.nombre }}</h3>
+          <p class="categoria">Categoría: <strong>{{ liga.categoria }}</strong></p>
+          <p class="equipos-count">⚽ Equipos inscritos: {{ liga.totalEquipos || 0 }}</p>
+        </div>
 
-    <!-- 🛠️ NUEVO: Footer de la tarjeta con acciones de administración y acceso -->
-    <div class="liga-card-footer">
-      <!-- Acciones de Edición/Eliminación visibles solo para Admin y Dueño de la Liga -->
-      <div class="admin-actions" v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'">
-        <button class="btn-icon" title="Editar Liga" @click.stop="abrirModalEditar(liga)">✏️</button>
-        <button class="btn-icon delete" title="Eliminar Liga" @click.stop="eliminar(liga.id)">🗑️</button>
+        <!-- Footer de la tarjeta con acciones de administración y acceso -->
+        <div class="liga-card-footer">
+          <!-- Acciones de Edición/Eliminación visibles solo para Admin y Dueño de la Liga -->
+          <div class="admin-actions" v-if="authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'">
+            <button class="btn-icon" title="Editar Liga" @click.stop="abrirModalEditar(liga)">✏️</button>
+            <button class="btn-icon delete" title="Eliminar Liga" @click.stop="eliminar(liga.id)">🗑️</button>
+          </div>
+
+          <!-- Botón de Acceso -->
+          <button 
+            class="btn-primary" 
+            :disabled="authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)"
+            @click="ingresarALiga(liga)"
+          >
+            {{ (authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)) ? '🔒 Sin acceso' : 'Entrar' }}
+          </button>
+        </div>
       </div>
 
-      <!-- Botón de Acceso -->
-      <button 
-        class="btn-primary" 
-        :disabled="authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)"
-        @click="ingresarALiga(liga)"
-      >
-        {{ (authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)) ? '🔒 Sin acceso' : 'Entrar' }}
-      </button>
+      <div v-if="ligasVisibles.length === 0" class="empty-state">
+        <p>No hay ligas disponibles para mostrar.</p>
+      </div>
     </div>
-  </div>
-
-  <div v-if="ligasVisibles.length === 0" class="empty-state">
-    <p>No hay ligas disponibles para mostrar.</p>
-  </div>
-</div>
 
     <!-- Modal Dinámico para Crear / Editar Liga -->
     <div v-if="mostrarModal" class="modal-overlay" @click.self="cerrarModal">
@@ -145,7 +146,6 @@ const formulario = ref({
   categoria: ''
 })
 
-// Cargar ligas de MongoDB al abrir la vista
 onMounted(async () => {
   await ligaStore.obtenerLigas()
   await obtenerTodosLosEquiposGlobales()
@@ -169,7 +169,6 @@ function cerrarModal() {
   mostrarModal.value = false
 }
 
-// 🛠️ CORREGIDO: Se unificó el filtrado de roles + el buscador de texto y se usa cerrarModal()
 const ligasVisibles = computed(() => {
   const user = authStore.user
   if (!user) return []
@@ -177,16 +176,13 @@ const ligasVisibles = computed(() => {
   let resultado = []
 
   if (user.rol === 'admin') {
-    resultado = ligaStore.ligas // El admin ve todas
+    resultado = ligaStore.ligas
   } else if (user.rol === 'liga_owner') {
-    // El owner solo ve las ligas creadas por él
     resultado = ligaStore.ligas.filter(l => l.ownerEmail?.toLowerCase() === user.email?.toLowerCase())
   } else if (user.rol === 'capitan') {
-    // El capitán ve todas, pero validamos acceso individual
     resultado = ligaStore.ligas
   }
 
-  // Aplicamos el filtro de búsqueda por texto (nombre o categoría)
   if (filtro.value.trim() !== '') {
     const texto = filtro.value.toLowerCase()
     resultado = resultado.filter(liga => 
@@ -202,19 +198,16 @@ async function guardarLiga() {
   if (!formulario.value.nombre || !formulario.value.categoria) return
 
    if (modoEdicion.value) {
-    // ✏️ Actualizar liga existente
     await ligaStore.actualizarLiga(ligaIdEditando.value, formulario.value)
   } else {
-    // ✨ Crear nueva liga con su ownerEmail
     const datosNuevaLiga = {
-    nombre: formulario.value.nombre,
-    categoria: formulario.value.categoria,
-    ownerEmail: authStore.user?.email || ''
+      nombre: formulario.value.nombre,
+      categoria: formulario.value.categoria,
+      ownerEmail: authStore.user?.email || ''
     }
-
     await ligaStore.crearLiga(datosNuevaLiga)
   }
-  cerrarModal() // 🛠️ CORREGIDO: Se cambió cerrarModalLiga() por cerrarModal()
+  cerrarModal()
   await ligaStore.obtenerLigas()
 }
 
@@ -224,14 +217,8 @@ async function eliminar(id) {
   }
 }
 
-function irAlDashboard(id) {
-  router.push({ name: 'liga-dashboard', params: { id } })
-}
-
-// 🛡️ Valida si el capitán tiene un equipo en una liga específica
 function capitanTieneAccesoA(ligaId) {
   if (authStore.user?.rol !== 'capitan') return true
-  
   return equiposGlobales.value.some(eq => 
     (eq.ligaId === ligaId || eq.ligaId?._id === ligaId) && 
     eq.capitanEmail?.toLowerCase() === authStore.user.email?.toLowerCase()
@@ -263,9 +250,10 @@ async function obtenerTodosLosEquiposGlobales() {
 .home-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem;
   font-family: 'Inter', system-ui, sans-serif;
   color: #1e293b;
+  box-sizing: border-box;
 }
 
 .hero-banner {
@@ -274,9 +262,9 @@ async function obtenerTodosLosEquiposGlobales() {
   background-size: cover;
   background-position: center;
   border-radius: 16px;
-  padding: 3.5rem 2.5rem;
+  padding: 2.5rem 1.5rem;
   color: white;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   overflow: hidden;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
 }
@@ -304,28 +292,46 @@ async function obtenerTodosLosEquiposGlobales() {
 }
 
 .hero-banner h1 {
-  font-size: 2.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   margin: 0.75rem 0 0.5rem 0;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .hero-banner p {
   color: #cbd5e1;
   margin-bottom: 1.5rem;
+  font-size: clamp(0.9rem, 2vw, 1rem);
 }
 
-.btn-hero {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 0.85rem 1.5rem;
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-hero, .btn-back {
+  padding: 0.75rem 1.25rem;
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-hero {
+  background: #10b981;
+  color: white;
+  border: none;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-back {
+  background: #e2e8f0;
+  color: #334155;
+  border: none;
 }
 
 .controls-section {
@@ -340,7 +346,13 @@ async function obtenerTodosLosEquiposGlobales() {
 .search-box {
   position: relative;
   flex: 1;
-  min-width: 280px;
+  min-width: 100%;
+}
+
+@media(min-width: 640px) {
+  .search-box {
+    min-width: 280px;
+  }
 }
 
 .search-icon {
@@ -366,12 +378,20 @@ async function obtenerTodosLosEquiposGlobales() {
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   color: #475569;
+  width: 100%;
+  text-align: center;
+}
+
+@media(min-width: 640px) {
+  .stats-counter {
+    width: auto;
+  }
 }
 
 .ligas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
 
 .liga-card {
@@ -383,82 +403,62 @@ async function obtenerTodosLosEquiposGlobales() {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  cursor: pointer;
 }
 
 .liga-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
 }
 
-.card-header-bg {
-  background: linear-gradient(135deg, #1e293b, #334155);
+.liga-info {
   padding: 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-badge {
-  background: #38bdf8;
-  color: #0f172a;
-  padding: 0.2rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.card-body {
-  padding: 1.5rem;
   flex-grow: 1;
 }
 
-.card-body h3 {
+.liga-info h3 {
   margin: 0 0 0.5rem 0;
   color: #0f172a;
+  font-size: 1.15rem;
 }
 
-.card-info {
+.liga-info p {
   color: #64748b;
   font-size: 0.9rem;
-  margin: 0;
+  margin: 0.25rem 0;
 }
 
-.card-footer {
+.liga-card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.25rem;
   background: #f8fafc;
   border-top: 1px solid #f1f5f9;
 }
 
-.status.active {
-  color: #10b981;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.card-actions {
+.admin-actions {
   display: flex;
   gap: 0.5rem;
 }
 
 .btn-icon {
-  background: none;
+  background: #e2e8f0;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
-  padding: 0.3rem;
-  border-radius: 4px;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
   transition: background 0.2s;
 }
 
 .btn-icon:hover {
-  background: #e2e8f0;
+  background: #cbd5e1;
 }
 
-/* Modales */
+.btn-icon.delete:hover {
+  background: #fee2e2;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -468,27 +468,35 @@ async function obtenerTodosLosEquiposGlobales() {
   justify-content: center;
   align-items: center;
   z-index: 100;
+  padding: 1rem;
 }
 
 .modal-content {
   background: white;
-  padding: 2.25rem;
+  padding: 1.5rem;
   border-radius: 16px;
   width: 100%;
   max-width: 450px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+@media(min-width: 640px) {
+  .modal-content {
+    padding: 2.25rem;
+  }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
 }
 
 .close-btn {
@@ -529,63 +537,28 @@ async function obtenerTodosLosEquiposGlobales() {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 0.75rem 1.25rem;
+  padding: 0.65rem 1.1rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .btn-secondary {
   background: #e2e8f0;
   color: #475569;
   border: none;
-  padding: 0.75rem 1.25rem;
+  padding: 0.65rem 1.1rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
   color: #94a3b8;
-  padding: 4rem 0;
-}
-
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 0.75rem;
-}
-.liga-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  background: #f8fafc;
-  border-top: 1px solid #f1f5f9;
-  margin-top: auto;
-}
-
-.admin-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-icon {
-  background: #e2e8f0;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-
-.btn-icon:hover {
-  background: #cbd5e1;
-}
-
-.btn-icon.delete:hover {
-  background: #fee2e2;
+  padding: 3rem 0;
 }
 </style>

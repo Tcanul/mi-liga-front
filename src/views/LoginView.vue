@@ -1,7 +1,6 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <!-- ⚽ Logo y Título del Torneo -->
       <div class="login-logo-header">
         <div class="logo-icon">⚽</div>
         <h1>Mi liga de futbol</h1>
@@ -18,7 +17,6 @@
           <input v-model="password" type="password" placeholder="••••••••" required />
         </div>
         
-        <!-- Mensaje de error si falla -->
         <p v-if="error" class="error-msg">{{ error }}</p>
 
         <button type="submit" class="btn-primary" :disabled="cargando">
@@ -46,11 +44,7 @@ async function handleLogin() {
   try {
     error.value = ''
     cargando.value = true
-    
-    // Llamada al backend a través de Pinia
     await authStore.login(email.value, password.value)
-
-    // Si es correcto, redirige al Home (o dashboard principal)
     router.push({ name: 'home' })
   } catch (err) {
     error.value = err.message || 'Correo o contraseña incorrectos'
@@ -71,26 +65,34 @@ async function handleLogin() {
   background-size: cover;
   background-position: center;
   padding: 1rem;
+  box-sizing: border-box;
 }
 
 .login-card {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
-  padding: 2.5rem;
+  padding: 1.5rem;
   border-radius: 16px;
   width: 100%;
   max-width: 420px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
+}
+
+@media(min-width: 640px) {
+  .login-card {
+    padding: 2.5rem;
+  }
 }
 
 .login-logo-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .logo-icon {
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 0.5rem;
   animation: bounce 2s infinite;
 }
@@ -101,7 +103,7 @@ async function handleLogin() {
 }
 
 .login-logo-header h1 {
-  font-size: 1.65rem;
+  font-size: clamp(1.4rem, 3vw, 1.65rem);
   font-weight: 800;
   color: #0f172a;
   margin: 0 0 0.3rem 0;
@@ -110,30 +112,29 @@ async function handleLogin() {
 
 .login-logo-header p {
   color: #64748b;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   margin: 0;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #334155;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.8rem 1rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   font-size: 0.95rem;
   box-sizing: border-box;
-  transition: all 0.2s ease;
   background: #f8fafc;
 }
 
@@ -149,10 +150,10 @@ async function handleLogin() {
   background: #10b981;
   color: white;
   border: none;
-  padding: 0.85rem;
+  padding: 0.8rem;
   border-radius: 10px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
@@ -161,15 +162,12 @@ async function handleLogin() {
 
 .btn-primary:hover {
   background: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
 }
 
 .btn-primary:disabled {
   background: #93c5fd;
   box-shadow: none;
   cursor: not-allowed;
-  transform: none;
 }
 
 .error-msg {

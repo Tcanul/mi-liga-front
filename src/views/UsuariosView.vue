@@ -13,12 +13,12 @@
       <button class="btn-primary" @click="abrirModalCrear">+ Crear Nuevo Usuario</button>
     </div>
 
-    <!-- Tabla de Usuarios -->
+    <!-- Tabla de Usuarios con Scroll Horizontal Responsivo -->
     <div class="table-responsive">
       <table class="standings-table">
         <thead>
           <tr>
-            <th>Nombre</th>
+            <th class="team-col">Nombre</th>
             <th>Correo Electrónico</th>
             <th>Rol</th>
             <th>Estatus</th>
@@ -31,7 +31,7 @@
             <td>{{ user.email }}</td>
             <td>
               <span :class="['rol-badge', user.rol]">
-                {{ user.rol === 'admin' ? 'Administrador' : user.rol === 'liga_owner' ? 'Dueño de Liga (Owner)' : 'Capitán' }}
+                {{ user.rol === 'admin' ? 'Administrador' : user.rol === 'liga_owner' ? 'Dueño de Liga' : 'Capitán' }}
               </span>
             </td>
             <td>
@@ -40,7 +40,6 @@
               </span>
             </td>
             <td>
-              <!-- Restricción: Un Owner no puede editar a Admins u otros Owners -->
               <div v-if="puedeGestionar(user)" class="action-buttons-cell">
                 <button class="btn-secondary-sm" @click="abrirModalEditar(user)">✏️ Editar</button>
                 <button 
@@ -76,7 +75,7 @@
           </div>
 
           <div class="form-group">
-            <label>Contraseña {{ modoEdicion ? '(Dejar en blanco para mantener la actual)' : '' }}</label>
+            <label>Contraseña {{ modoEdicion ? '(Dejar en blanco para mantener)' : '' }}</label>
             <input v-model="formulario.password" type="password" placeholder="******" :required="!modoEdicion" />
           </div>
 
@@ -95,7 +94,6 @@
         </form>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -120,18 +118,15 @@ const formulario = ref({
   activo: true
 })
 
-// Filtrar usuarios visibles según permisos
-// Admin ve Owners y Capitanes. Owner solo ve Capitanes.
 const usuariosFiltrados = computed(() => {
   if (authStore.user?.rol === 'admin') {
-    return usuarios.value.filter(u => u.rol !== 'admin') // Oculta al admin principal si se desea
+    return usuarios.value.filter(u => u.rol !== 'admin')
   } else if (authStore.user?.rol === 'liga_owner') {
     return usuarios.value.filter(u => u.rol === 'capitan')
   }
   return []
 })
 
-// Evaluar si el usuario actual puede modificar a un usuario específico
 function puedeGestionar(targetUser) {
   if (authStore.user?.rol === 'admin') return true
   if (authStore.user?.rol === 'liga_owner' && targetUser.rol === 'capitan') return true
@@ -230,7 +225,79 @@ async function toggleInactivar(user) {
 </script>
 
 <style scoped>
-/* Reutiliza los estilos generales y badges limpios */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media(min-width: 640px) {
+  .dashboard-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+}
+
+.section-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+@media(min-width: 640px) {
+  .section-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  -webkit-overflow-scrolling: touch;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.standings-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.standings-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.team-col { text-align: left !important; }
+
 .rol-badge {
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
@@ -243,8 +310,19 @@ async function toggleInactivar(user) {
 
 .action-buttons-cell {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   justify-content: center;
+}
+
+.btn-secondary-sm {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #334155;
 }
 
 .btn-danger-sm {
@@ -263,4 +341,90 @@ async function toggleInactivar(user) {
   color: #94a3b8;
   font-size: 0.85rem;
 }
+
+/* Modales */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 450px;
+  box-sizing: border-box;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media(min-width: 640px) {
+  .modal-content {
+    padding: 2rem;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.modal-header h2 { font-size: 1.15rem; margin: 0; }
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border: none;
+}
+.btn-primary { background: #2563eb; color: white; }
+.btn-secondary { background: #e2e8f0; color: #475569; }
 </style>

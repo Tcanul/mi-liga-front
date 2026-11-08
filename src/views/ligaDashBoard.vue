@@ -9,7 +9,7 @@
       </div>
     </header>
 
-    <!-- Pestañas de Navegación del Panel -->
+    <!-- Pestañas de Navegación del Panel (Adaptables horizontalmente) -->
     <div class="dashboard-tabs">
       <button 
         :class="['tab-btn', pestañaActiva === 'equipos' ? 'active' : '']" 
@@ -21,7 +21,7 @@
         :class="['tab-btn', pestañaActiva === 'posiciones' ? 'active' : '']" 
         @click="pestañaActiva = 'posiciones'"
       >
-        📊 Tabla de Posiciones
+        📊 Posiciones
       </button>
       <button 
         :class="['tab-btn', pestañaActiva === 'rol' ? 'active' : '']" 
@@ -43,17 +43,15 @@
     <section v-if="pestañaActiva === 'equipos'" class="equipos-section">
       <div class="section-toolbar">
         <h2>Listado de Equipos Inscritos</h2>
-        
         <button 
           v-if="esAdmin"
           class="btn-primary" 
           @click="abrirModalCrear"
         >
-          + Registrar Nuevo Equipo
+          + Registrar Equipo
         </button>
       </div>
 
-      <!-- Tarjetas de Equipos con Estilos Restaurados -->
       <div class="equipos-grid">
         <div v-for="equipo in ligaStore.equipos" :key="equipo.id" class="equipo-card">
           <div class="equipo-logo-container">
@@ -70,8 +68,7 @@
             </span>
           </div>
 
-          <!-- Acciones de Edición y Eliminación -->
-          <div v-if="esAdmin" class="equipo-actions">
+          <div class="equipo-actions" v-if="esAdmin">
             <button class="btn-icon" @click="abrirModalEditar(equipo)" title="Editar Equipo / Estadísticas">✏️</button>
             <button class="btn-icon delete" @click="eliminarEquipo(equipo.id)" title="Eliminar Equipo">🗑</button>
           </div>
@@ -96,7 +93,7 @@
     <section v-if="pestañaActiva === 'posiciones'" class="posiciones-section">
       <div class="section-toolbar">
         <h2>📊 Tabla General de Posiciones</h2>
-        <span class="sub-text">Calculada en tiempo real</span>
+        <span class="sub-text">Tiempo real</span>
       </div>
 
       <div class="table-responsive">
@@ -104,7 +101,7 @@
           <thead>
             <tr>
               <th>Pos</th>
-              <th>Equipo</th>
+              <th class="team-col">Equipo</th>
               <th>JJ</th>
               <th>JG</th>
               <th>JE</th>
@@ -123,7 +120,7 @@
                 <div class="team-cell-info">
                   <img v-if="equipo.logo" :src="equipo.logo" class="mini-logo" />
                   <span v-else class="mini-placeholder">⚽</span>
-                  <span>{{ equipo.nombre }}</span>
+                  <span class="team-text-name">{{ equipo.nombre }}</span>
                 </div>
               </td>
               <td>{{ equipo.jj || 0 }}</td>
@@ -152,28 +149,28 @@
     <section v-if="pestañaActiva === 'rol'" class="rol-section">
       <div class="jornada-bar">
         <div class="jornada-selector">
-          <label><strong>Seleccionar Jornada:</strong></label>
+          <label><strong>Jornada:</strong></label>
           <select v-model.number="jornadaSeleccionada" @change="cargarRolJornada">
             <option v-for="j in 20" :key="j" :value="j">Jornada {{ j }}</option>
           </select>
         </div>
 
         <button v-if="esAdmin" class="btn-primary" @click="mostrarModalPartido = true">
-          + Programar Partido
+          + Programar
         </button>
       </div>
 
       <!-- Banner de Número Impar y Descanso -->
       <div v-if="esImpar" class="descanso-banner">
         <div class="descanso-info">
-          ⚠️ <strong>Número Impar de Equipos ({{ totalEquipos }} equipos):</strong> 
-          <span>En la Jornada {{ jornadaSeleccionada }} hay un equipo en descanso.</span>
+          ⚠️ <strong>Número Impar ({{ totalEquipos }} equipos):</strong> 
+          <span>Hay un equipo en descanso en la J.{{ jornadaSeleccionada }}.</span>
         </div>
 
         <div class="descanso-selector">
-          <label>Equipo que descansa:</label>
+          <label>Descansa:</label>
           <select v-model="equipoDescansaSeleccionado" @change="guardarDescanso" :disabled="!esAdmin">
-            <option value="" disabled>-- Seleccionar Equipo --</option>
+            <option value="" disabled>-- Seleccionar --</option>
             <option v-for="eq in ligaStore.equipos" :key="eq.id" :value="eq.id">
               ☕ {{ eq.nombre }}
             </option>
@@ -194,7 +191,7 @@
               <button v-if="esAdmin" class="btn-icon delete" @click="borrarPartido(partido._id)" title="Eliminar descanso">🗑</button>
             </div>
 
-            <!-- Partido Normal con Marcadores y Estatus -->
+            <!-- Partido Normal -->
             <div v-else class="match-content">
               <div class="match-info-top">
                 <span> 📅 {{ partido.fecha || 'S/F' }} - ⏰ {{ partido.hora || 'S/H' }}</span>
@@ -216,8 +213,8 @@
               </div>
 
               <div v-if="esAdmin" class="match-card-actions">
-                <button class="btn-secondary-sm" @click="abrirModalResultado(partido)">⚽ Capturar Resultado</button>
-                <button class="btn-icon delete" @click="borrarPartido(partido._id)">🗑 Eliminar</button>
+                <button class="btn-secondary-sm" @click="abrirModalResultado(partido)">⚽ Capturar</button>
+                <button class="btn-icon delete" @click="borrarPartido(partido._id)">🗑</button>
               </div>
             </div>
           </div>
@@ -229,30 +226,33 @@
       </div>
     </section>
 
+    <!-- ========================================== -->
+    <!-- SECCIÓN 4: GOLEADORES -->
+    <!-- ========================================== -->
     <section v-if="pestañaActiva === 'goleadores'" class="rol-section">
-      <!-- ⚽ SECCIÓN DE GOLEADORES -->
-        <div class="goleadores-card">
-          <h2>🏆 Tabla de Goleadores - Top 10</h2>
+      <div class="goleadores-card">
+        <h2>🏆 Tabla de Goleadores - Top 10</h2>
+        <div class="table-responsive">
           <table class="tabla-goleadores">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Jugador</th>
-              <th>Goles</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Se asegura de tratarlo como arreglo sin importar si viene directo o envuelto -->
-            <tr v-for="(goleador, index) in (Array.isArray(ligaStore.goleadoresTop) ? ligaStore.goleadoresTop : (ligaStore.goleadoresTop?.goleadores || []))" :key="goleador.jugadorId || index">
-              <td>{{ index + 1 }}</td>
-              <td>{{ goleador.nombre || goleador.jugadorNombre || 'Sin nombre' }}</td>
-              <td><strong>{{ goleador.goles ?? goleador.totalGoles ?? 0 }}</strong></td>
-            </tr>
-            <tr v-if="!ligaStore.goleadoresTop || (Array.isArray(ligaStore.goleadoresTop) && ligaStore.goleadoresTop.length === 0)">
-              <td colspan="3" class="text-center">Aún no hay goles registrados en esta liga.</td>
-            </tr>
-          </tbody>
-        </table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="team-col">Jugador</th>
+                <th>Goles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(goleador, index) in (Array.isArray(ligaStore.goleadoresTop) ? ligaStore.goleadoresTop : (ligaStore.goleadoresTop?.goleadores || []))" :key="goleador.jugadorId || index">
+                <td>{{ index + 1 }}</td>
+                <td class="team-col">{{ goleador.nombre || goleador.jugadorNombre || 'Sin nombre' }}</td>
+                <td><strong>{{ goleador.goles ?? goleador.totalGoles ?? 0 }}</strong></td>
+              </tr>
+              <tr v-if="!ligaStore.goleadoresTop || (Array.isArray(ligaStore.goleadoresTop) && ligaStore.goleadoresTop.length === 0)">
+                <td colspan="3" class="text-center">Aún no hay goles registrados en esta liga.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -276,15 +276,20 @@
               <input v-model="formulario.dueno" type="text" placeholder="Nombre del representante" required />
             </div>
 
-            <!-- NUEVO: Campo para asignar el correo del capitán -->
             <div class="form-group full-width">
               <label>Correo del Capitán (Permiso para gestionar jugadores)</label>
               <input v-model="formulario.capitanEmail" type="email" placeholder="ejemplo@ligas.com" />
             </div>
 
             <div class="form-group full-width">
-              <label>URL del Logo (Opcional)</label>
-              <input v-model="formulario.logo" type="url" placeholder="https://ejemplo.com/logo.png" />
+              <label>Logo del Equipo (Subir desde tu dispositivo)</label>
+              <input type="file" accept="image/*" @change="onFileSelected" class="file-input" />
+              
+              <!-- Vista previa de la imagen seleccionada -->
+              <div v-if="formulario.logo" class="logo-preview-container">
+                <img :src="formulario.logo" alt="Vista previa del logo" class="preview-img" />
+                <span class="preview-text">Logo seleccionado</span>
+              </div>
             </div>
           </div>
 
@@ -377,8 +382,8 @@
             <div v-for="(n, index) in formResultado.golesLocal" :key="'loc-' + index" class="form-group">
               <label>Gol {{ index + 1 }}</label>
               <select v-model="formResultado.goleadoresLocal[index]" required>
-                <option :value="undefined" disabled>Selecciona el jugador</option>
-                <option v-for="jugador in jugadoresLocal" :key="jugador.id || jugador._id" :value="{ jugadorId: jugador.id || jugador._id, nombre: jugador.nombre }">
+                <option :value="null" disabled>Selecciona el jugador</option>
+                <option v-for="jugador in jugadoresLocal" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
                   {{ jugador.nombre }} (#{{ jugador.dorsal }})
                 </option>
               </select>
@@ -391,8 +396,8 @@
             <div v-for="(n, index) in formResultado.golesVisitante" :key="'vis-' + index" class="form-group">
               <label>Gol {{ index + 1 }}</label>
               <select v-model="formResultado.goleadoresVisitante[index]" required>
-                <option :value="undefined" disabled>Selecciona el jugador</option>
-                <option v-for="jugador in jugadoresVisitante" :key="jugador.id || jugador._id" :value="{ jugadorId: jugador.id || jugador._id, nombre: jugador.nombre }">
+                <option :value="null" disabled>Selecciona el jugador</option>
+                <option v-for="jugador in jugadoresVisitante" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
                   {{ jugador.nombre }} (#{{ jugador.dorsal }})
                 </option>
               </select>
@@ -424,7 +429,6 @@
           <button class="close-btn" @click="mostrarModalJugadores = false">&times;</button>
         </div>
 
-        <!-- Formulario para Agregar/Editar Jugador (Solo Admin, Liga Owner o Capitán Asignado) -->
         <form v-if="puedeGestionarJugadores(equipoSeleccionadoJugadores)" @submit.prevent="guardarJugador" class="jugador-form">
           <h4>{{ modoEdicionJugador ? '✏️ Editar Jugador' : '➕ Registrar Jugador' }}</h4>
           <div class="jugador-form-grid">
@@ -446,8 +450,7 @@
           ℹ️ Vista en modo lectura. Solo el capitán asignado o la administración pueden modificar la plantilla.
         </div>
 
-        <!-- Lista de Jugadores Registrados -->
-        <div class="jugadores-list-container">
+        <div class="jugadores-list-container table-responsive">
           <table class="jugadores-table">
             <thead>
               <tr>
@@ -463,8 +466,10 @@
                 <td>{{ jugador.nombre }}</td>
                 <td><span class="posicion-tag">{{ jugador.posicion }}</span></td>
                 <td v-if="puedeGestionarJugadores(equipoSeleccionadoJugadores)">
-                  <button class="btn-icon" @click="editarJugadorForm(jugador)">✏️</button>
-                  <button class="btn-icon delete" @click="borrarJugador(jugador._id)">🗑</button>
+                  <div class="action-buttons-cell">
+                    <button class="btn-icon" @click="editarJugadorForm(jugador)">✏️</button>
+                    <button class="btn-icon delete" @click="borrarJugador(jugador._id)">🗑</button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!ligaStore.jugadores || ligaStore.jugadores.length === 0">
@@ -492,7 +497,6 @@ const authStore = useAuthStore()
 const ligaId = route.params.id
 const pestañaActiva = ref('equipos')
 
-// Rol de juegos
 const jornadaSeleccionada = ref(1)
 const equipoDescansaSeleccionado = ref('')
 const mostrarModalPartido = ref(false)
@@ -505,12 +509,11 @@ const formPartido = ref({
   cancha: 'Cancha Principal'
 })
 
-// Resultado modal
 const mostrarModalResultadoFlag = ref(false)
 const partidoEditando = ref(null)
 const jugadoresLocal = ref([])
 const jugadoresVisitante = ref([])
-const formResultado = ref({ golesLocal: 0, golesVisitante: 0, estatus: 'pendiente',goleadoresLocal: [], goleadoresVisitante: [] })
+const formResultado = ref({ golesLocal: 0, golesVisitante: 0, estatus: 'pendiente', goleadoresLocal: [], goleadoresVisitante: [] })
 
 const mostrarModal = ref(false)
 const modoEdicion = ref(false)
@@ -541,13 +544,11 @@ const tablaPosiciones = computed(() => {
     const gc = Number(eq.gc) || 0
     const ptsExtras = Number(eq.ptsExtras) || 0
     
-    // Cálculo seguro de diferencia de goles y puntos totales
     const dg = gf - gc
     const pts = (jg * 3) + (je * 1) + ptsExtras
 
     return { ...eq, jj, jg, je, jp, gf, gc, dg, ptsExtras, pts }
   }).sort((a, b) => {
-    // Ordenar por Puntos desc, luego Diferencia de Goles desc, luego Goles a Favor desc
     if (b.pts !== a.pts) return b.pts - a.pts
     if (b.dg !== a.dg) return b.dg - a.dg
     return b.gf - a.gf
@@ -559,16 +560,9 @@ onMounted(async () => {
   await ligaStore.obtenerEquiposPorLiga(ligaId)
   await cargarRolJornada()
   if (ligaStore.obtenerGoleadores) {
-  await ligaStore.obtenerGoleadores(ligaId)
-  }
-})
-
-async function cambiarPestaña(tab) {
-  pestañaActiva.value = tab
-  if (tab === 'goleadores' && ligaStore.obtenerGoleadores) {
     await ligaStore.obtenerGoleadores(ligaId)
   }
-}
+})
 
 async function cargarRolJornada() {
   await ligaStore.obtenerPartidosPorJornada(ligaId, jornadaSeleccionada.value)
@@ -598,15 +592,19 @@ async function guardarNuevoPartido() {
 async function abrirModalResultado(partido) {
   partidoEditando.value = partido
   
+  const mapGoleadores = (lista) => {
+    if (!lista) return []
+    return lista.map(g => g.jugadorId?._id || g.jugadorId || g)
+  }
+
   formResultado.value = {
     golesLocal: partido.golesLocal || 0,
     golesVisitante: partido.golesVisitante || 0,
     estatus: partido.estatus || 'completado',
-    goleadoresLocal: partido.goleadoresLocal ? [...partido.goleadoresLocal] : [],
-    goleadoresVisitante: partido.goleadoresVisitante ? [...partido.goleadoresVisitante] : []
+    goleadoresLocal: mapGoleadores(partido.goleadoresLocal),
+    goleadoresVisitante: mapGoleadores(partido.goleadoresVisitante)
   }
 
-  // Cargar plantillas de ambos equipos
   const idLocal = partido.equipoLocal?._id || partido.equipoLocal
   const idVisitante = partido.equipoVisitante?._id || partido.equipoVisitante
 
@@ -623,7 +621,6 @@ async function abrirModalResultado(partido) {
   mostrarModalResultadoFlag.value = true
 }
 
-// Ajusta el tamaño del arreglo de goleadores si cambian los goles
 function ajustarArregloGoleadores(equipo) {
   if (equipo === 'local') {
     formResultado.value.goleadoresLocal = formResultado.value.goleadoresLocal.slice(0, formResultado.value.golesLocal)
@@ -632,12 +629,32 @@ function ajustarArregloGoleadores(equipo) {
   }
 }
 
-
-
 async function guardarResultadoPartido() {
   if (!partidoEditando.value) return
+
+  // Auxiliar para buscar el objeto del jugador completo por su ID
+  const obtenerDatosJugador = (id, lista) => {
+    const jug = lista.find(j => (j.id || j._id) === id)
+    return {
+      jugadorId: id,
+      nombre: jug ? jug.nombre : 'Sin nombre'
+    }
+  }
+
+  // Mapeamos enviando tanto jugadorId como el nombre del jugador
+  const payload = {
+    golesLocal: formResultado.value.golesLocal,
+    golesVisitante: formResultado.value.golesVisitante,
+    estatus: formResultado.value.estatus,
+    goleadoresLocal: formResultado.value.goleadoresLocal
+      .filter(id => id) // Evita elementos vacíos o nulos
+      .map(id => obtenerDatosJugador(id, jugadoresLocal.value)),
+    goleadoresVisitante: formResultado.value.goleadoresVisitante
+      .filter(id => id)
+      .map(id => obtenerDatosJugador(id, jugadoresVisitante.value))
+  }
   
-  await ligaStore.actualizarPartido(partidoEditando.value._id, formResultado.value, ligaId, jornadaSeleccionada.value)
+  await ligaStore.actualizarPartido(partidoEditando.value._id, payload, ligaId, jornadaSeleccionada.value)
   await ligaStore.obtenerEquiposPorLiga(ligaId)
   await ligaStore.obtenerGoleadores(ligaId)
   mostrarModalResultadoFlag.value = false
@@ -651,7 +668,7 @@ async function borrarPartido(id) {
 
 function abrirModalCrear() {
   modoEdicion.value = false
-  formulario.value = { nombre: '', dueno: '',capitanEmail: '', logo: '', activo: true, jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0 }
+  formulario.value = { nombre: '', dueno: '', capitanEmail: '', logo: '', activo: true, jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0 }
   equipoIdEditando.value = null
   mostrarModal.value = true
 }
@@ -687,28 +704,20 @@ async function eliminarEquipo(id) {
   }
 }
 
-// Computada para saber si el usuario actual es admin o dueño de liga
 const esAdmin = computed(() => {
   return authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner'
 })
 
-// Evalúa si el capitán actual tiene derecho a editar la plantilla de un equipo específico
-// Función para validar permisos de gestión en el modal de jugadores
 function puedeGestionarJugadores(equipo) {
-  // Si es admin o dueño de liga, puede gestionar cualquier equipo
   if (authStore.user?.rol === 'admin' || authStore.user?.rol === 'liga_owner') {
     return true
   }
-  
-  // Si es capitán, solo puede gestionar si su correo coincide exactamente con el del equipo
   if (authStore.user?.email && equipo?.capitanEmail) {
     return authStore.user.email.trim().toLowerCase() === equipo.capitanEmail.trim().toLowerCase()
   }
-  
   return false
 }
 
-// Modal de Plantilla / Jugadores
 const mostrarModalJugadores = ref(false)
 const equipoSeleccionadoJugadores = ref(null)
 const modoEdicionJugador = ref(false)
@@ -748,7 +757,7 @@ async function guardarJugador() {
 
   const payload = {
     ...formJugador.value,
-    equipoId: equipoSeleccionadoJugadores.value.id  || equipoSeleccionadoJugadores.value._id
+    equipoId: equipoSeleccionadoJugadores.value.id || equipoSeleccionadoJugadores.value._id
   }
 
   if (modoEdicionJugador.value) {
@@ -761,7 +770,6 @@ async function guardarJugador() {
 
 async function seleccionarPestaniaGoleadores() {
   pestañaActiva.value = 'goleadores'
-  // Forzamos la consulta al backend cada vez que abren la pestaña
   await ligaStore.obtenerGoleadores(ligaId)
 }
 
@@ -771,22 +779,53 @@ async function borrarJugador(id) {
   }
 }
 
+// Función para convertir la imagen del dispositivo a Base64
+function onFileSelected(event) {
+  const file = event.target.files[0]
+  if (file) {
+    // Validar que sea una imagen y que no pese más de 2MB (recomendado para bases de datos NoSQL)
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen es demasiado pesada. Elige una menor a 2 MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      // Se asigna la cadena Base64 al campo logo del formulario
+      formulario.value.logo = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
 </script>
 
 <style scoped>
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem;
   font-family: 'Inter', system-ui, sans-serif;
   color: #1e293b;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media(min-width: 640px) {
+  .dashboard-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
 }
 
 .btn-back {
@@ -796,38 +835,52 @@ async function borrarJugador(id) {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  width: fit-content;
 }
 
 .dashboard-tabs {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 0.5rem;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .tab-btn {
-  background: none;
+  background: #f1f5f9;
   border: none;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   cursor: pointer;
   color: #64748b;
   border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .tab-btn.active {
   color: #2563eb;
+  background: #eff6ff;
   border-bottom-color: #2563eb;
 }
 
 .section-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+@media(min-width: 640px) {
+  .section-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .sub-text {
@@ -835,33 +888,28 @@ async function borrarJugador(id) {
   color: #64748b;
 }
 
-/* �� ESTILOS RESTAURADOS DE LAS TARJETAS (CARDS) DE EQUIPOS */
+/* Equipos Grid */
 .equipos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
 .equipo-card {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 1.25rem;
+  padding: 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.equipo-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  flex-wrap: wrap;
 }
 
 .equipo-logo-container {
-  width: 55px;
-  height: 55px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: #f1f5f9;
   display: flex;
@@ -879,28 +927,29 @@ async function borrarJugador(id) {
 }
 
 .equipo-logo-placeholder {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .equipo-details {
   flex-grow: 1;
+  min-width: 140px;
 }
 
 .equipo-details h3 {
   margin: 0 0 0.15rem 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: #0f172a;
 }
 
 .equipo-dueno {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.82rem;
+  margin: 0 0 0.2rem 0;
+  font-size: 0.8rem;
   color: #64748b;
 }
 
 .equipo-stats-mini {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.78rem;
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
   color: #475569;
 }
 
@@ -908,31 +957,37 @@ async function borrarJugador(id) {
   font-size: 0.75rem;
   font-weight: 700;
 }
-
 .status-badge.activo { color: #10b981; }
 .status-badge.inactivo { color: #ef4444; }
 
 .equipo-actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .btn-icon {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
-  padding: 0.2rem;
+  font-size: 0.95rem;
+  padding: 0.3rem;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
-.btn-icon:hover {
-  background: #f1f5f9;
+.btn-icon:hover { background: #f1f5f9; }
+.btn-icon.delete:hover { background: #fee2e2; }
+
+.equipo-card-footer {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
 }
 
-/* Estilos de la Tabla de Posiciones */
+/* Tablas Responsivas */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -940,76 +995,82 @@ async function borrarJugador(id) {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  -webkit-overflow-scrolling: touch;
 }
 
-.standings-table {
+.standings-table, .tabla-goleadores, .jugadores-table {
   width: 100%;
   border-collapse: collapse;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-.standings-table th {
+.standings-table th, .tabla-goleadores th, .jugadores-table th {
   background: #f8fafc;
   color: #475569;
   font-weight: 600;
-  padding: 1rem;
+  padding: 0.75rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.standings-table td {
-  padding: 0.85rem 1rem;
+.standings-table td, .tabla-goleadores td, .jugadores-table td {
+  padding: 0.65rem 0.75rem;
   border-bottom: 1px solid #f1f5f9;
   color: #334155;
 }
 
-.standings-table tr:hover {
-  background: #f8fafc;
-}
-
-.pos-col { width: 50px; color: #64748b; }
-.team-col { text-align: left; }
+.pos-col { width: 40px; color: #64748b; }
+.team-col { text-align: left !important; }
 
 .team-cell-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   font-weight: 600;
 }
 
 .mini-logo {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.mini-placeholder { font-size: 1.1rem; }
+.mini-placeholder { font-size: 1rem; }
 .text-green { color: #10b981; font-weight: 600; }
 .text-red { color: #ef4444; font-weight: 600; }
 
 .pts-badge {
   background: #eff6ff;
   color: #2563eb;
-  padding: 0.3rem 0.6rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 6px;
 }
 
-/* Estilos del Rol de Juegos y Tarjetas de Partidos */
+/* Rol de Juegos */
 .jornada-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   background: white;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+@media(min-width: 640px) {
+  .jornada-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .jornada-selector select {
-  margin-left: 0.75rem;
-  padding: 0.5rem 1rem;
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-weight: bold;
@@ -1019,28 +1080,43 @@ async function borrarJugador(id) {
   background: #fef3c7;
   border: 1px solid #f59e0b;
   border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media(min-width: 640px) {
+  .descanso-banner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .descanso-selector select {
-  margin-left: 0.5rem;
-  padding: 0.4rem 0.8rem;
+  margin-top: 0.25rem;
+  padding: 0.4rem;
   border-radius: 6px;
   border: 1px solid #d97706;
   background: white;
   font-weight: 600;
+  width: 100%;
+}
+
+@media(min-width: 640px) {
+  .descanso-selector select {
+    width: auto;
+    margin-left: 0.5rem;
+    margin-top: 0;
+  }
 }
 
 .matches-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
   margin-top: 1rem;
 }
 
@@ -1048,7 +1124,7 @@ async function borrarJugador(id) {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
@@ -1056,17 +1132,16 @@ async function borrarJugador(id) {
   text-align: center;
   color: #b45309;
 }
-
-.match-descanso .icon { font-size: 2rem; }
+.match-descanso .icon { font-size: 1.8rem; }
 
 .match-info-top {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #64748b;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
 }
 
 .match-scoreboard {
@@ -1074,18 +1149,22 @@ async function borrarJugador(id) {
   justify-content: space-between;
   align-items: center;
   background: #f8fafc;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.8rem;
   border-radius: 8px;
-  margin: 0.75rem 0;
+  margin: 0.5rem 0;
   border: 1px solid #e2e8f0;
 }
 
 .team-box {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .team-box.visitante { flex-direction: row-reverse; }
@@ -1093,17 +1172,17 @@ async function borrarJugador(id) {
 .score {
   background: #2563eb;
   color: white;
-  padding: 0.2rem 0.6rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 6px;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
-.vs-divider { font-size: 0.8rem; color: #94a3b8; font-weight: bold; }
+.vs-divider { font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
 
 .estatus-pill {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 9999px;
 }
 .estatus-pill.pendiente { background: #fef3c7; color: #d97706; }
@@ -1114,23 +1193,23 @@ async function borrarJugador(id) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   border-top: 1px solid #f1f5f9;
-  padding-top: 0.5rem;
+  padding-top: 0.4rem;
 }
 
 .btn-secondary-sm {
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   color: #334155;
 }
 
-/* Modales */
+/* Modales Adaptables */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1140,78 +1219,109 @@ async function borrarJugador(id) {
   justify-content: center;
   align-items: center;
   z-index: 100;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .modal-content.large-modal { max-width: 550px; }
 
 .modal-content {
   background: white;
-  padding: 2rem;
+  padding: 1.25rem;
   border-radius: 14px;
   width: 100%;
+  max-width: 420px; /* Reducido para que sea más compacto */
+  max-height: 85vh;  /* Evita que rebase la altura de la pantalla */
+  overflow-y: auto;  /* Habilita scroll interno si el contenido es alto */
   box-sizing: border-box;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+@media(min-width: 640px) {
+  .modal-content {
+    padding: 2rem;
+  }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+.modal-header h2 {
+  font-size: 1.05rem;
+  margin: 0;
 }
 
-.full-width { grid-column: span 2; }
+.form-group {
+  margin-bottom: 0.6rem; /* Espaciado más compacto entre campos */
+}
+
+@media(min-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.full-width { grid-column: 1 / -1; }
 
 .stats-edit-section {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #e2e8f0;
 }
 
 .stats-edit-section h3 {
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
   color: #334155;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+@media(min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .form-group { margin-bottom: 0.75rem; }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #475569;
 }
 
-.form-group input, .form-group select {
+.form-group input, 
+.form-group select {
   width: 100%;
-  padding: 0.55rem;
+  padding: 0.5rem;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   box-sizing: border-box;
+  font-size: 0.88rem;
+  background-color: #fff;
 }
 
 .score-inputs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .input-score {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   text-align: center;
   font-weight: bold;
 }
@@ -1222,172 +1332,138 @@ async function borrarJugador(id) {
   gap: 0.5rem;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
-.btn-primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 0.65rem 1.1rem;
+.btn-primary, .btn-secondary {
+  padding: 0.55rem 1rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.btn-secondary {
-  background: #e2e8f0;
-  color: #475569;
+  font-size: 0.85rem;
   border: none;
-  padding: 0.65rem 1.1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
 }
+.btn-primary { background: #2563eb; color: white; }
+.btn-secondary { background: #e2e8f0; color: #475569; }
 
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
   color: #94a3b8;
-  padding: 3rem 0;
-}
-.equipo-card-footer {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #f1f5f9;
+  padding: 2.5rem 0;
 }
 
 .jugador-form {
   background: #f8fafc;
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .jugador-form h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
+  margin: 0 0 0.4rem 0;
+  font-size: 0.85rem;
   color: #334155;
 }
 
 .jugador-form-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr auto;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+@media(min-width: 640px) {
+  .jugador-form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.5fr auto;
+  }
 }
 
 .btn-primary-sm {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 0.5rem 0.8rem;
+  padding: 0.4rem 0.7rem;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.8rem;
 }
 
 .read-only-banner {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #1e40af;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.8rem;
   border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
-
-.jugadores-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.jugadores-table th, .jugadores-table td {
-  padding: 0.6rem;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
 }
 
 .posicion-tag {
   background: #f1f5f9;
   color: #475569;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
-}
-.dashboard-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.dashboard-tabs {
-  display: flex;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  background: #f1f5f9;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  color: #475569;
-  transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-  background: #e2e8f0;
-}
-
-.tab-btn.active {
-  background: #2563eb;
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .goleadores-card {
   background: white;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
 }
 
-.tabla-goleadores {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.tabla-goleadores th, .tabla-goleadores td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-}
-
-.tabla-goleadores th {
-  background: #f8fafc;
-  font-weight: 600;
-  color: #1e293b;
-}
-
 .text-center {
   text-align: center;
   color: #94a3b8;
-  padding: 2rem 0;
+  padding: 1.5rem 0;
+}
+
+.action-buttons-cell {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+.file-input {
+  padding: 0.4rem !important;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.logo-preview-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  background: #f1f5f9;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+}
+
+.preview-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #94a3b8;
+}
+
+.preview-text {
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
 }
 </style>
