@@ -140,7 +140,7 @@ onMounted(async () => {
 async function obtenerUsuarios() {
   try {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-    const res = await fetch(`${API_URL}/api/usuarios`)
+    const res = await fetch(`${API_URL}api/usuarios`)
     if (res.ok) {
       usuarios.value = await res.json()
     }
@@ -178,8 +178,8 @@ function abrirModalEditar(user) {
 async function guardarUsuario() {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
   const url = modoEdicion.value 
-    ? `${API_URL}/api/usuarios/${usuarioIdEditando.value}`
-    : `${API_URL}/api/usuarios`
+    ? `${API_URL}api/usuarios/${usuarioIdEditando.value}`
+    : `${API_URL}api/usuarios`
   
   const method = modoEdicion.value ? 'PUT' : 'POST'
 
@@ -209,7 +209,7 @@ async function toggleInactivar(user) {
   if (confirm(`¿Estás seguro de ${accionText} a este usuario?`)) {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${API_URL}/api/usuarios/${user._id}`, {
+      const res = await fetch(`${API_URL}api/usuarios/${user._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...user, activo: nuevoEstatus })
