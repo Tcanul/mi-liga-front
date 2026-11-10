@@ -2,7 +2,7 @@
   <div class="dashboard-container">
     <!-- Header del Dashboard -->
     <header class="dashboard-header">
-      <button class="btn-back" @click="router.push('/')">← Volver a Ligas</button>
+      <button class="btn-back" @click="router.push('/homeView')">← Volver a Ligas</button>
       <div class="header-info">
         <h1>🏟 Panel de Control</h1>
         <p v-if="ligaStore.ligaActual">Liga: <strong>{{ ligaStore.ligaActual.nombre }}</strong> ({{ ligaStore.ligaActual.categoria }})</p>
@@ -34,6 +34,13 @@
         @click="seleccionarPestaniaGoleadores"
       >
         ⚽ Goleadores (Top 10)
+      </button>
+      <!-- Pestaña Avisos -->
+      <button 
+        @click="pestañaActiva = 'avisos'" 
+        :class="['tab-btn', pestañaActiva === 'avisos' ? 'active' : '']"
+      >
+        📢 Avisos
       </button>
     </div>
 
@@ -252,6 +259,99 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN 5: AVISOS (Rediseñado Profesional) -->
+    <!-- ========================================== -->
+    <section v-if="pestañaActiva === 'avisos'" class="avisos-section-modern">
+      <div class="avisos-header-banner">
+        <div class="avisos-header-text">
+          <h2>📢 Tablón de Avisos Oficiales</h2>
+          <p>Mantén informados a los equipos y capitanes con comunicados importantes del torneo.</p>
+        </div>
+      </div>
+
+      <!-- Formulario para crear o editar aviso -->
+      <div class="aviso-form-card">
+        <div class="form-card-title">
+          <span>{{ editandoAvisoId ? '✏️ Modificar Aviso' : '✨ Publicar Nuevo Comunicado' }}</span>
+        </div>
+        <form @submit.prevent="guardarAviso">
+          <div class="form-group">
+            <label>Contenido del Aviso</label>
+            <textarea 
+              v-model="formularioAviso.texto" 
+              rows="3" 
+              placeholder="Escribe aquí las indicaciones, cambios de horario o avisos generales..." 
+              required
+            ></textarea>
+          </div>
+          
+          <div class="form-footer-row">
+            <label class="custom-checkbox-container">
+              <input type="checkbox" v-model="formularioAviso.activo" />
+              <span class="checkmark-text">Marcar como Aviso Activo / Visible</span>
+            </label>
+
+            <div class="form-action-btns">
+              <button v-if="editandoAvisoId" type="button" class="btn-cancel-modern" @click="cancelarEdicionAviso">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-submit-modern">
+                {{ editandoAvisoId ? 'Guardar Cambios' : 'Publicar Aviso' }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Listado de Avisos -->
+      <div class="avisos-content-wrapper">
+        <div class="list-heading">
+          <h3>Comunicados Publicados</h3>
+          <span class="badge-count">{{ avisosLiga.length }} avisos</span>
+        </div>
+
+        <div v-if="cargandoAvisos" class="avisos-loading-state">
+          <div class="spinner-loader"></div>
+          <p>Cargando avisos...</p>
+        </div>
+
+        <div v-else-if="avisosLiga.length === 0" class="avisos-empty-state">
+          <div class="empty-icon-box">📭</div>
+          <p>No hay avisos registrados para esta liga actualmente.</p>
+        </div>
+
+        <div v-else class="avisos-cards-grid">
+          <div 
+            v-for="aviso in avisosLiga" 
+            :key="aviso._id" 
+            class="aviso-item-card" 
+            :class="{ 'card-inactivo': !aviso.activo }"
+          >
+            <div class="aviso-card-header">
+              <span :class="['modern-status-pill', aviso.activo ? 'status-activo' : 'status-inactivo']">
+                {{ aviso.activo ? '● Activo' : '● Inactivo' }}
+              </span>
+              <span class="aviso-date-tag">📅 {{ new Date(aviso.createdAt).toLocaleDateString() }}</span>
+            </div>
+
+            <div class="aviso-card-body">
+              <p>{{ aviso.texto }}</p>
+            </div>
+
+            <div class="aviso-card-footer" v-if="esAdmin">
+              <button @click="editarAviso(aviso)" class="btn-action-edit" title="Editar Aviso">
+                ✏️ Editar
+              </button>
+              <button @click="eliminarAviso(aviso._id)" class="btn-action-delete" title="Eliminar Aviso">
+                🗑 Eliminar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -519,6 +619,16 @@ const mostrarModal = ref(false)
 const modoEdicion = ref(false)
 const equipoIdEditando = ref(null)
 
+// --- ESTADOS Y LÓGICA DE AVISOS ---
+const avisosLiga = ref([])
+const cargandoAvisos = ref(false)
+const editandoAvisoId = ref(null)
+
+const formularioAviso = ref({
+  texto: '',
+  activo: true
+})
+
 const formulario = ref({
   nombre: '',
   dueno: '',
@@ -562,6 +672,7 @@ onMounted(async () => {
   if (ligaStore.obtenerGoleadores) {
     await ligaStore.obtenerGoleadores(ligaId)
   }
+  await cargarAvisosLiga()
 })
 
 async function cargarRolJornada() {
@@ -801,6 +912,81 @@ function onFileSelected(event) {
     reader.readAsDataURL(file)
   }
 }
+const cargarAvisosLiga = async () => {
+  if (!ligaId) return
+  cargandoAvisos.value = true
+  try {
+    const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+    const res = await fetch(`${API_URL}/api/ligas/${ligaId}/avisos`)
+    if (res.ok) {
+      avisosLiga.value = await res.json()
+    }
+  } catch (error) {
+    console.error('Error al cargar avisos:', error)
+  } finally {
+    cargandoAvisos.value = false
+  }
+}
+
+const guardarAviso = async () => {
+  try {
+    const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+    const url = editandoAvisoId.value 
+      ? `${API_URL}/api/avisos/${editandoAvisoId.value}`
+      : `${API_URL}/api/avisos`
+    
+    const method = editandoAvisoId.value ? 'PUT' : 'POST'
+    const bodyData = {
+      ligaId: ligaId, // 👈 Usamos la variable correcta 'ligaId'
+      texto: formularioAviso.value.texto,
+      activo: formularioAviso.value.activo
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyData)
+    })
+
+    if (res.ok) {
+      formularioAviso.value = { texto: '', activo: true }
+      editandoAvisoId.value = null
+      await cargarAvisosLiga()
+    } else {
+      alert('Error al guardar el aviso')
+    }
+  } catch (error) {
+    console.error('Error al guardar aviso:', error)
+  }
+}
+
+const editarAviso = (aviso) => {
+  editandoAvisoId.value = aviso._id
+  formularioAviso.value = {
+    texto: aviso.texto,
+    activo: aviso.activo
+  }
+}
+
+const cancelarEdicionAviso = () => {
+  editandoAvisoId.value = null
+  formularioAviso.value = { texto: '', activo: true }
+}
+
+const eliminarAviso = async (id) => {
+  if (!confirm('¿Estás seguro de eliminar este aviso?')) return
+  try {
+    const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+    const res = await fetch(`${API_URL}/api/avisos/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      await cargarAvisosLiga()
+    }
+  } catch (error) {
+    console.error('Error al eliminar aviso:', error)
+  }
+}
+
+
 </script>
 
 <style scoped>
@@ -1209,6 +1395,325 @@ function onFileSelected(event) {
   color: #334155;
 }
 
+/* ========================================== */
+/* ESTILOS PROFESIONALES PARA LA SECCIÓN DE AVISOS */
+/* ========================================== */
+.avisos-section-modern {
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.avisos-header-banner {
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.avisos-header-text h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.3rem 0;
+}
+
+.avisos-header-text p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Formulario de Aviso Estilizado */
+.aviso-form-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.form-card-title span {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.aviso-form-card textarea {
+  width: 100%;
+  padding: 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background-color: #f8fafc;
+  resize: vertical;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.aviso-form-card textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-footer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: flex-start;
+}
+
+@media(min-width: 640px) {
+  .form-footer-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.custom-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-checkbox-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.checkmark-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.form-action-btns {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media(min-width: 640px) {
+  .form-action-btns {
+    width: auto;
+  }
+}
+
+.btn-submit-modern {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.btn-submit-modern:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-cancel-modern {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancel-modern:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Listado de Avisos (Grid Moderno) */
+.avisos-content-wrapper .list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.avisos-content-wrapper h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.badge-count {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.avisos-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.aviso-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #2563eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.aviso-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.aviso-item-card.card-inactivo {
+  border-top-color: #94a3b8;
+  opacity: 0.75;
+  background: #f8fafc;
+}
+
+.aviso-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.modern-status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.status-activo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-inactivo {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.aviso-date-tag {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.aviso-card-body p {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.aviso-card-footer {
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-action-edit {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action-edit:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-action-delete {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action-delete:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.avisos-loading-state, .avisos-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+}
+
+.empty-icon-box {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.spinner-loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.75rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Modales Adaptables */
 .modal-overlay {
   position: fixed;
@@ -1231,9 +1736,9 @@ function onFileSelected(event) {
   padding: 1.25rem;
   border-radius: 14px;
   width: 100%;
-  max-width: 420px; /* Reducido para que sea más compacto */
-  max-height: 85vh;  /* Evita que rebase la altura de la pantalla */
-  overflow-y: auto;  /* Habilita scroll interno si el contenido es alto */
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
   box-sizing: border-box;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
 }
@@ -1257,7 +1762,7 @@ function onFileSelected(event) {
 }
 
 .form-group {
-  margin-bottom: 0.6rem; /* Espaciado más compacto entre campos */
+  margin-bottom: 0.6rem;
 }
 
 @media(min-width: 640px) {
@@ -1291,8 +1796,6 @@ function onFileSelected(event) {
     grid-template-columns: repeat(4, 1fr);
   }
 }
-
-.form-group { margin-bottom: 0.75rem; }
 
 .form-group label {
   display: block;

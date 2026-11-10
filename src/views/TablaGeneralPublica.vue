@@ -95,7 +95,42 @@
           </table>
         </div>
       </div>
+
+      <!-- 📢 SECCIÓN DE AVISOS ACTIVOS DE LA LIGA (GRIDVIEW - COLOCADA DEBAJO DE LA TABLA) -->
+      <div v-if="avisosActivos.length > 0" class="avisos-public-section">
+        <h3 class="avisos-section-title">📢 Avisos Oficiales del Torneo</h3>
+        <div class="avisos-grid-public">
+          <div v-for="aviso in avisosActivos" :key="aviso._id" class="aviso-public-card">
+            <div class="aviso-card-date">
+              <span>📅 {{ new Date(aviso.createdAt).toLocaleDateString() }}</span>
+            </div>
+            <div class="aviso-card-text">
+              <p>{{ aviso.texto }}</p>
+            </div>
+            <!-- Botón condicional si el texto es extenso -->
+            <div v-if="aviso.texto && aviso.texto.length > 120" class="aviso-card-action">
+              <button class="btn-leer-mas" @click="abrirPopupAviso(aviso)">Ver completo</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
+
+    <!-- 🪟 POPUP / MODAL PARA AVISOS EXTENSOS -->
+    <div v-if="modalAvisoAbierto" class="modal-overlay-public" @click.self="cerrarPopupAviso">
+      <div class="modal-content-public">
+        <div class="modal-header-public">
+          <h3>📢 Aviso Importante</h3>
+          <button class="close-btn-public" @click="cerrarPopupAviso">&times;</button>
+        </div>
+        <div class="modal-body-public">
+          <p>{{ avisoSeleccionado?.texto }}</p>
+        </div>
+        <div class="modal-footer-public">
+          <button class="btn-cerrar-popup" @click="cerrarPopupAviso">Cerrar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Pie de página -->
     <footer class="public-footer">
@@ -114,7 +149,17 @@ const ligaSeleccionadaId = ref('')
 const equiposDeLiga = ref([])
 const cargando = ref(false)
 
-// Tu función computada adaptada para ordenar y calcular los puntos y diferencia de goles
+// Estados para los avisos públicos
+const avisosLiga = ref([])
+const modalAvisoAbierto = ref(false)
+const avisoSeleccionado = ref(null)
+
+// Filtrar únicamente los avisos que estén activos (activo: true)
+const avisosActivos = computed(() => {
+  return avisosLiga.value.filter(a => a.activo === true)
+})
+
+// Función computada para ordenar y calcular los puntos y diferencia de goles
 const tablaPosiciones = computed(() => {
   if (!equiposDeLiga.value || equiposDeLiga.value.length === 0) return []
 
@@ -148,11 +193,11 @@ onMounted(async () => {
     const dataLigas = await resLigas.json()
     ligas.value = Array.isArray(dataLigas) ? dataLigas : (dataLigas.ligas || dataLigas.data || [])
 
-    // Si hay ligas, seleccionamos la primera y cargamos sus equipos
+    // Si hay ligas, seleccionamos la primera y cargamos sus equipos y avisos
     if (ligas.value.length > 0) {
       const primeraLiga = ligas.value[0]
       ligaSeleccionadaId.value = primeraLiga._id || primeraLiga.id
-      await cargarEquiposDeLiga(ligaSeleccionadaId.value)
+      await cargarDatosLiga(ligaSeleccionadaId.value)
     }
   } catch (error) {
     console.error('Error al inicializar la vista pública:', error)
@@ -161,28 +206,60 @@ onMounted(async () => {
   }
 })
 
-// Función para cuando el usuario cambia de liga en el combo
+// Función unificada cuando el usuario cambia de liga en el combo
 const cambiarLiga = async () => {
   if (!ligaSeleccionadaId.value) return
-  await cargarEquiposDeLiga(ligaSeleccionadaId.value)
+  await cargarDatosLiga(ligaSeleccionadaId.value)
 }
 
-// Función que trae los equipos pertenecientes a la liga seleccionada desde el backend
-const cargarEquiposDeLiga = async (ligaId) => {
-  if (!ligaId) return
+// Carga en paralelo o secuencia los equipos y los avisos de la liga seleccionada
+const cargarDatosLiga = async (ligaId) => {
   cargando.value = true
   try {
-    const response = await fetch(`${API_URL}/api/ligas/${ligaId}/equipos`)
-    if (!response.ok) throw new Error('Error al obtener los equipos de la liga')
-    
-    const data = await response.json()
-    equiposDeLiga.value = Array.isArray(data) ? data : (data.equipos || data.data || [])
+    await Promise.all([
+      cargarEquiposDeLiga(ligaId),
+      cargarAvisosPublicos(ligaId)
+    ])
   } catch (error) {
-    console.error('Error al cargar equipos de la liga:', error)
-    equiposDeLiga.value = []
+    console.error('Error al cargar datos de la liga:', error)
   } finally {
     cargando.value = false
   }
+}
+
+// Trae los equipos de la liga seleccionada
+const cargarEquiposDeLiga = async (ligaId) => {
+  const response = await fetch(`${API_URL}/api/ligas/${ligaId}/equipos`)
+  if (!response.ok) throw new Error('Error al obtener los equipos de la liga')
+  const data = await response.json()
+  equiposDeLiga.value = Array.isArray(data) ? data : (data.equipos || data.data || [])
+}
+
+// Trae los avisos creados por la liga desde el backend
+const cargarAvisosPublicos = async (ligaId) => {
+  try {
+    const response = await fetch(`${API_URL}/api/ligas/${ligaId}/avisos`)
+    if (response.ok) {
+      const data = await response.json()
+      avisosLiga.value = Array.isArray(data) ? data : []
+    } else {
+      avisosLiga.value = []
+    }
+  } catch (error) {
+    console.error('Error al obtener avisos públicos:', error)
+    avisosLiga.value = []
+  }
+}
+
+// Métodos para controlar el popup de lectura de avisos largos
+const abrirPopupAviso = (aviso) => {
+  avisoSeleccionado.value = aviso
+  modalAvisoAbierto.value = true
+}
+
+const cerrarPopupAviso = () => {
+  modalAvisoAbierto.value = false
+  avisoSeleccionado.value = null
 }
 </script>
 
@@ -276,7 +353,7 @@ const cargarEquiposDeLiga = async (ligaId) => {
 /* Selector de Ligas */
 .selector-container {
   max-width: 400px;
-  margin: 0 auto 2.5rem auto;
+  margin: 0 auto 2rem auto;
   text-align: center;
 }
 
@@ -307,6 +384,86 @@ const cargarEquiposDeLiga = async (ligaId) => {
 .selector-container select:focus {
   border-color: #34d399;
   box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+}
+
+/* 📢 ESTILOS DEL GRIDVIEW DE AVISOS (DEBAJO DE LA TABLA) */
+.avisos-public-section {
+  margin-top: 2.5rem;
+}
+
+.avisos-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #34d399;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avisos-grid-public {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.aviso-public-card {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid #334155;
+  border-left: 4px solid #34d399;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.aviso-public-card:hover {
+  transform: translateY(-2px);
+}
+
+.aviso-card-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.aviso-card-text p {
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0 0 0.75rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Trunca a 3 líneas máximo */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.aviso-card-action {
+  text-align: right;
+  border-top: 1px solid #334155;
+  padding-top: 0.6rem;
+}
+
+.btn-leer-mas {
+  background: transparent;
+  border: none;
+  color: #34d399;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.btn-leer-mas:hover {
+  color: #6ee7b7;
+  text-decoration: underline;
 }
 
 /* Tarjeta de la Tabla */
@@ -431,6 +588,100 @@ const cargarEquiposDeLiga = async (ligaId) => {
   color: #34d399;
   font-size: 1.05rem;
   background: rgba(52, 211, 153, 0.08);
+}
+
+/* 🪟 ESTILOS DEL POPUP / MODAL */
+.modal-overlay-public {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content-public {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header-public {
+  background: #0f172a;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+}
+
+.modal-header-public h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #34d399;
+}
+
+.close-btn-public {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.close-btn-public:hover {
+  color: #ffffff;
+}
+
+.modal-body-public {
+  padding: 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-body-public p {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.modal-footer-public {
+  background: #0f172a;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #334155;
+}
+
+.btn-cerrar-popup {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cerrar-popup:hover {
+  background: #475569;
 }
 
 /* Estados de carga y vacío */
