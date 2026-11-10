@@ -1,27 +1,7 @@
-El error de JavaScript que estás experimentando (`TypeError: Failed to fetch`) al consultar los usuarios se debe exactamente al mismo detalle de las barras diagonales que vimos antes, combinado con cómo estás uniendo tu variable de entorno en las funciones.
-
-Si te fijas en tus funciones (`obtenerUsuarios`, `guardarUsuario`, `toggleInactivar`), estás haciendo esto:
-
-```javascript
-const res = await fetch(`${API_URL}api/usuarios`)
-
-```
-
-Como puedes ver, **falta la barra diagonal (`/`)** entre `API_URL` y `api/usuarios`. Si `API_URL` es `http://localhost:4000`, el navegador intenta buscar en `http://localhost:4000api/usuarios`, lo cual es una URL totalmente inválida y provoca que falle de inmediato el `fetch`.
-
----
-
-### Solución definitiva:
-
-Para solucionarlo de una vez por todas en este archivo y evitar cualquier otro error de URLs rotas, asegúrate de colocar la barra `/` explícitamente al inicio de cada ruta, o usa un helper limpio.
-
-Aquí tienes tu código corregido con todas las rutas actualizadas correctamente (`${API_URL}/api/...`), manteniendo intactas todas tus funciones, validaciones de roles y estilos:
-
-```vue
 <template>
   <div class="dashboard-container">
     <header class="dashboard-header">
-      <button class="btn-back" @click="router.push('/')">← Volver al Inicio</button>
+      <button class="btn-back" @click="router.push('/homeView')">← Volver al Inicio</button>
       <div class="header-info">
         <h1>👥 Gestión de Usuarios y Roles</h1>
         <p>Administra las cuentas de acceso para Owners y Capitanes.</p>

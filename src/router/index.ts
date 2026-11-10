@@ -20,7 +20,7 @@ const router = createRouter({
       component: LoginView
     },
     {
-      path: '/',
+      path: '/homeView',
       name: 'home',
       component: HomeView,
       meta: { requiresAuth: true } // Requiere estar logueado
