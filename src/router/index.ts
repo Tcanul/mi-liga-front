@@ -10,6 +10,11 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+    path: '/',
+    name: 'HomePublica',
+    component: TablaGeneralPublica
+    },
+    {
       path: '/login',
       name: 'login',
       component: LoginView
@@ -19,11 +24,6 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
       meta: { requiresAuth: true } // Requiere estar logueado
-    },
-    {
-    path: '/',
-    name: 'HomePublica',
-    component: TablaGeneralPublica
     },
     {
       path: '/liga/:id',

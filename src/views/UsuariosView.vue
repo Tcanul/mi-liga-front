@@ -1,3 +1,23 @@
+El error de JavaScript que estás experimentando (`TypeError: Failed to fetch`) al consultar los usuarios se debe exactamente al mismo detalle de las barras diagonales que vimos antes, combinado con cómo estás uniendo tu variable de entorno en las funciones.
+
+Si te fijas en tus funciones (`obtenerUsuarios`, `guardarUsuario`, `toggleInactivar`), estás haciendo esto:
+
+```javascript
+const res = await fetch(`${API_URL}api/usuarios`)
+
+```
+
+Como puedes ver, **falta la barra diagonal (`/`)** entre `API_URL` y `api/usuarios`. Si `API_URL` es `http://localhost:4000`, el navegador intenta buscar en `http://localhost:4000api/usuarios`, lo cual es una URL totalmente inválida y provoca que falle de inmediato el `fetch`.
+
+---
+
+### Solución definitiva:
+
+Para solucionarlo de una vez por todas en este archivo y evitar cualquier otro error de URLs rotas, asegúrate de colocar la barra `/` explícitamente al inicio de cada ruta, o usa un helper limpio.
+
+Aquí tienes tu código corregido con todas las rutas actualizadas correctamente (`${API_URL}/api/...`), manteniendo intactas todas tus funciones, validaciones de roles y estilos:
+
+```vue
 <template>
   <div class="dashboard-container">
     <header class="dashboard-header">
@@ -118,7 +138,10 @@ const formulario = ref({
   activo: true
 })
 
-
+// Función auxiliar segura para obtener la URL base sin problemas de barras duplicadas o faltantes
+const getApiUrl = () => {
+  return (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+}
 
 const usuariosFiltrados = computed(() => {
   if (authStore.user?.rol === 'admin') {
@@ -141,10 +164,12 @@ onMounted(async () => {
 
 async function obtenerUsuarios() {
   try {
-    const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-    const res = await fetch(`${API_URL}api/usuarios`)
+    const API_URL = getApiUrl()
+    const res = await fetch(`${API_URL}/api/usuarios`) // 👈 Agregada la barra diagonal faltante
     if (res.ok) {
       usuarios.value = await res.json()
+    } else {
+      console.error('Error en la respuesta del servidor al obtener usuarios')
     }
   } catch (error) {
     console.error('Error al obtener usuarios:', error)
@@ -178,10 +203,10 @@ function abrirModalEditar(user) {
 }
 
 async function guardarUsuario() {
-  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
+  const API_URL = getApiUrl()
   const url = modoEdicion.value 
-    ? `${API_URL}api/usuarios/${usuarioIdEditando.value}`
-    : `${API_URL}api/usuarios`
+    ? `${API_URL}/api/usuarios/${usuarioIdEditando.value}` // 👈 Agregada la barra
+    : `${API_URL}/api/usuarios`                          // 👈 Agregada la barra
   
   const method = modoEdicion.value ? 'PUT' : 'POST'
 
@@ -210,8 +235,8 @@ async function toggleInactivar(user) {
   
   if (confirm(`¿Estás seguro de ${accionText} a este usuario?`)) {
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-      const res = await fetch(`${API_URL}api/usuarios/${user._id}`, {
+      const API_URL = getApiUrl()
+      const res = await fetch(`${API_URL}/api/usuarios/${user._id}`, { // 👈 Agregada la barra
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...user, activo: nuevoEstatus })
@@ -430,3 +455,5 @@ async function toggleInactivar(user) {
 .btn-primary { background: #2563eb; color: white; }
 .btn-secondary { background: #e2e8f0; color: #475569; }
 </style>
+
+```
