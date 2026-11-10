@@ -1,5 +1,12 @@
 <template>
   <div class="login-container">
+    <!-- Botón flotante superior para volver a la tabla pública -->
+    <div class="top-back-nav">
+      <router-link to="/" class="btn-back-public">
+        ← Volver a la Tabla General
+      </router-link>
+    </div>
+
     <div class="login-card">
       <div class="login-logo-header">
         <div class="logo-icon">⚽</div>
@@ -23,6 +30,13 @@
           {{ cargando ? 'Validando...' : 'Ingresar al Torneo' }}
         </button>
       </form>
+
+      <!-- Enlace adicional en la parte inferior para mayor comodidad -->
+      <div class="footer-back-link">
+        <router-link to="/">
+          ¿No deseas iniciar sesión? Ver tabla pública
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -66,6 +80,33 @@ async function handleLogin() {
   background-position: center;
   padding: 1rem;
   box-sizing: border-box;
+  position: relative;
+}
+
+/* Estilos para el botón superior de regreso */
+.top-back-nav {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+}
+
+.btn-back-public {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.btn-back-public:hover {
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .login-card {
@@ -179,5 +220,25 @@ async function handleLogin() {
   padding: 0.5rem;
   border-radius: 6px;
   border: 1px solid #fecaca;
+}
+
+/* Enlace inferior de respaldo */
+.footer-back-link {
+  margin-top: 1.2rem;
+  text-align: center;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+}
+
+.footer-back-link a {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-back-link a:hover {
+  color: #059669;
+  text-decoration: underline;
 }
 </style>

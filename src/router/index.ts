@@ -4,6 +4,7 @@ import LigaDashboard from '../views/ligaDashBoard.vue'
 import LoginView from '../views/LoginView.vue'
 import { useAuthStore } from '@/stores/authStore.ts'
 import UsuariosView from '@/views/UsuariosView.vue'
+import TablaGeneralPublica from '@/views/TablaGeneralPublica.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,6 +19,11 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
       meta: { requiresAuth: true } // Requiere estar logueado
+    },
+    {
+    path: '/',
+    name: 'HomePublica',
+    component: TablaGeneralPublica
     },
     {
       path: '/liga/:id',

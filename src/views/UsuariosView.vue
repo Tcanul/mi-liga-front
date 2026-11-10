@@ -118,6 +118,8 @@ const formulario = ref({
   activo: true
 })
 
+
+
 const usuariosFiltrados = computed(() => {
   if (authStore.user?.rol === 'admin') {
     return usuarios.value.filter(u => u.rol !== 'admin')
@@ -139,7 +141,7 @@ onMounted(async () => {
 
 async function obtenerUsuarios() {
   try {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
     const res = await fetch(`${API_URL}api/usuarios`)
     if (res.ok) {
       usuarios.value = await res.json()
@@ -176,7 +178,7 @@ function abrirModalEditar(user) {
 }
 
 async function guardarUsuario() {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
   const url = modoEdicion.value 
     ? `${API_URL}api/usuarios/${usuarioIdEditando.value}`
     : `${API_URL}api/usuarios`
@@ -208,7 +210,7 @@ async function toggleInactivar(user) {
   
   if (confirm(`¿Estás seguro de ${accionText} a este usuario?`)) {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
       const res = await fetch(`${API_URL}api/usuarios/${user._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
