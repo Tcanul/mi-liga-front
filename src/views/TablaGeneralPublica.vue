@@ -47,7 +47,9 @@
                 <th class="text-center">JG</th>
                 <th class="text-center">JE</th>
                 <th class="text-center">JP</th>
-                <th class="text-center">GF</th>
+                <th class="text-center">Pts Extra</th>
+                <th class="text-center">Faltas</th>
+                <th class="text-center">GF</th>                
                 <th class="text-center">GC</th>
                 <th class="text-center">DIF</th>
                 <th class="text-center pts-col">Pts</th>
@@ -73,7 +75,9 @@
                 <td class="text-center">{{ equipo.jg }}</td>
                 <td class="text-center">{{ equipo.je }}</td>
                 <td class="text-center">{{ equipo.jp }}</td>
-                <td class="text-center">{{ equipo.gf }}</td>
+                <td class="text-center">{{ equipo.ptsExtras }}</td>
+                <td class="text-center">{{ equipo.faltas }}</td>
+                <td class="text-center">{{ equipo.gf }}</td>                
                 <td class="text-center">{{ equipo.gc }}</td>
                 <td class="text-center fw-bold" :class="equipo.dg >= 0 ? 'text-positive' : 'text-negative'">
                   {{ equipo.dg > 0 ? `+${equipo.dg}` : equipo.dg }}
@@ -168,14 +172,15 @@ const tablaPosiciones = computed(() => {
     const jg = Number(eq.jg) || 0
     const je = Number(eq.je) || 0
     const jp = Number(eq.jp) || 0
+    const faltas = Number(eq.faltas) || 0
     const gf = Number(eq.gf) || 0
     const gc = Number(eq.gc) || 0
     const ptsExtras = Number(eq.ptsExtras) || 0
     
     const dg = gf - gc
-    const pts = (jg * 3) + (je * 1) + ptsExtras
+    const pts = (jg * 3) + (je * 1) + ptsExtras - faltas
 
-    return { ...eq, jj, jg, je, jp, gf, gc, dg, ptsExtras, pts }
+    return { ...eq, jj, jg, je, jp, gf, gc, dg, ptsExtras,faltas, pts }
   }).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
     if (b.dg !== a.dg) return b.dg - a.dg

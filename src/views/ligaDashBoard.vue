@@ -69,7 +69,7 @@
           <div class="equipo-details">
             <h3>{{ equipo.nombre }}</h3>
             <p class="equipo-dueno"> 👤 Dueño: <strong>{{ equipo.dueno }}</strong></p>
-            <p class="equipo-stats-mini">Pts: <strong>{{ equipo.pts || 0 }}</strong> | JJ: {{ equipo.jj || 0 }} | JG: {{ equipo.jg || 0 }} | JE: {{ equipo.je || 0 }} | JP: {{ equipo.jp || 0 }}</p>
+            <p class="equipo-stats-mini">Pts: <strong>{{ equipo.pts || 0 }}</strong> | JJ: {{ equipo.jj || 0 }} | JG: {{ equipo.jg || 0 }} | JE: {{ equipo.je || 0 }} | JP: {{ equipo.jp || 0 }} | Faltas: {{ equipo.faltas || 0 }}</p>
             <span :class="['status-badge', equipo.activo ? 'activo' : 'inactivo']">
               {{ equipo.activo ? '● Activo' : '● Inactivo' }}
             </span>
@@ -117,6 +117,7 @@
               <th>GC</th>
               <th>DG</th>
               <th>PE</th>
+              <th>Faltas</th>
               <th>Pts</th>
             </tr>
           </thead>
@@ -140,10 +141,11 @@
                 {{ equipo.dg || 0 }}
               </td>
               <td>{{ equipo.ptsExtras || 0 }}</td>
+              <td>{{ equipo.faltas || 0 }}</td>
               <td><strong class="pts-badge">{{ equipo.pts || 0 }}</strong></td>
             </tr>
             <tr v-if="!ligaStore.equipos || ligaStore.equipos.length === 0">
-              <td colspan="11" class="empty-state">No hay equipos para mostrar en la tabla de posiciones.</td>
+              <td colspan="12" class="empty-state">No hay equipos para mostrar en la tabla de posiciones.</td>
             </tr>
           </tbody>
         </table>
@@ -403,6 +405,7 @@
               <div class="form-group"><label>GF</label><input v-model.number="formulario.gf" type="number" min="0" /></div>
               <div class="form-group"><label>GC</label><input v-model.number="formulario.gc" type="number" min="0" /></div>
               <div class="form-group"><label>PE</label><input v-model.number="formulario.ptsExtras" type="number" min="0" /></div>
+              <div class="form-group"><label>Faltas</label><input v-model.number="formulario.faltas" type="number" min="0" /></div>
             </div>
           </div>
 
@@ -635,7 +638,7 @@ const formulario = ref({
   capitanEmail: '',
   logo: '',
   activo: true,
-  jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0
+  jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0, faltas: 0
 })
 
 const totalEquipos = computed(() => ligaStore.equipos ? ligaStore.equipos.length : 0)
@@ -653,11 +656,12 @@ const tablaPosiciones = computed(() => {
     const gf = Number(eq.gf) || 0
     const gc = Number(eq.gc) || 0
     const ptsExtras = Number(eq.ptsExtras) || 0
+    const faltas = Number(eq.faltas) || 0
     
     const dg = gf - gc
-    const pts = (jg * 3) + (je * 1) + ptsExtras
+    const pts = (jg * 3) + (je * 1) + ptsExtras - faltas
 
-    return { ...eq, jj, jg, je, jp, gf, gc, dg, ptsExtras, pts }
+    return { ...eq, jj, jg, je, jp, gf, gc, dg, ptsExtras, faltas, pts }
   }).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
     if (b.dg !== a.dg) return b.dg - a.dg
@@ -779,7 +783,7 @@ async function borrarPartido(id) {
 
 function abrirModalCrear() {
   modoEdicion.value = false
-  formulario.value = { nombre: '', dueno: '', capitanEmail: '', logo: '', activo: true, jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0 }
+  formulario.value = { nombre: '', dueno: '', capitanEmail: '', logo: '', activo: true, jj: 0, jg: 0, je: 0, jp: 0, gf: 0, gc: 0, ptsExtras: 0, faltas: 0 }
   equipoIdEditando.value = null
   mostrarModal.value = true
 }
@@ -790,7 +794,8 @@ function abrirModalEditar(equipo) {
   formulario.value = { 
     nombre: equipo.nombre, dueno: equipo.dueno, capitanEmail: equipo.capitanEmail || '', logo: equipo.logo, activo: equipo.activo,
     jj: equipo.jj || 0, jg: equipo.jg || 0, je: equipo.je || 0, jp: equipo.jp || 0,
-    gf: equipo.gf || 0, gc: equipo.gc || 0, ptsExtras: equipo.ptsExtras || 0
+    gf: equipo.gf || 0, gc: equipo.gc || 0, ptsExtras: equipo.ptsExtras || 0,
+    faltas: equipo.faltas || 0
   }
   mostrarModal.value = true
 }
