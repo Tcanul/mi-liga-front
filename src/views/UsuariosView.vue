@@ -87,6 +87,18 @@
             </select>
           </div>
 
+          <div class="form-group" v-if="formulario.rol === 'liga_owner'">
+            <label>Límite Máximo de Ligas Permitidas</label>
+            <input 
+              v-model.number="formulario.maxLigas" 
+              type="number" 
+              min="1" 
+              placeholder="Ej. 3" 
+              required 
+            />
+            <small class="help-text">Número máximo de torneos que este Dueño de Liga puede crear (Dejar vacío o asignar un número).</small>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="mostrarModal = false">Cancelar</button>
             <button type="submit" class="btn-primary">{{ modoEdicion ? 'Guardar Cambios' : 'Crear Usuario' }}</button>
@@ -115,7 +127,8 @@ const formulario = ref({
   email: '',
   password: '',
   rol: 'capitan',
-  activo: true
+  maxLigas: 3,
+  activo: true  
 })
 
 // Función auxiliar segura para obtener la URL base sin problemas de barras duplicadas o faltantes
@@ -164,6 +177,7 @@ function abrirModalCrear() {
     email: '',
     password: '',
     rol: authStore.user?.rol === 'admin' ? 'liga_owner' : 'capitan',
+    maxLigas: Number(formularioUsuario.value.maxLigas) || 3,
     activo: true
   }
   mostrarModal.value = true
@@ -177,6 +191,7 @@ function abrirModalEditar(user) {
     email: user.email,
     password: '',
     rol: user.rol,
+    maxLigas: user.maxLigas !== undefined ? user.maxLigas : 3,
     activo: user.activo
   }
   mostrarModal.value = true

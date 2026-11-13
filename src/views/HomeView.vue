@@ -230,6 +230,7 @@ async function guardarLiga() {
     categoria: formulario.value.categoria,
     logoLength: formulario.value.logo ? formulario.value.logo.length : 0
   })
+   try {
 
   const datosPayload = {
     nombre: formulario.value.nombre,
@@ -246,6 +247,10 @@ async function guardarLiga() {
   
   cerrarModal()
   await ligaStore.obtenerLigas()
+  } catch (error) {
+    // 💡 Capturamos el mensaje de tope máximo enviado por el backend y lo mostramos al usuario
+    alert(error.message || 'Ocurrió un error al guardar la liga.')
+  }
 }
 
 async function eliminar(id) {
@@ -671,5 +676,34 @@ function onFileSelected(event) {
   margin: 0;
   padding-top: 0.5rem;
   border-top: 1px solid #f1f5f9;
+}
+/* Contenedor de la vista previa del logo en el modal */
+.logo-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  gap: 0.5rem;
+}
+
+/* Tamaño fijo y controlado para la miniatura de previsualización */
+.preview-img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover; /* Recorta limpiamente la imagen si no es cuadrada */
+  border-radius: 50%; /* Opcional: la vuelve circular, puedes cambiarlo a 8px si prefieres escudo cuadrado */
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Texto descriptivo debajo de la miniatura */
+.preview-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
 }
 </style>
