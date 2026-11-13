@@ -101,6 +101,15 @@
       <div class="section-toolbar">
         <h2>📊 Tabla General de Posiciones</h2>
         <span class="sub-text">Tiempo real</span>
+      
+
+        <button 
+            class="btn-primary" 
+            @click="descargarTablaPDF"
+            :disabled="!tablaPosiciones || tablaPosiciones.length === 0"
+          >
+            📄 Descargar PDF
+        </button>
       </div>
 
       <div class="table-responsive">
@@ -209,15 +218,16 @@
                 </span>
               </div>
 
+              <!-- Marcador optimizado con control de nombres largos -->
               <div class="match-scoreboard">
                 <div class="team-box local">
-                  <span class="team-name">{{ partido.equipoLocal?.nombre || 'Local' }}</span>
+                  <span class="team-name" :title="partido.equipoLocal?.nombre || 'Local'">{{ partido.equipoLocal?.nombre || 'Local' }}</span>
                   <span class="score">{{ partido.golesLocal ?? 0 }}</span>
                 </div>
                 <span class="vs-divider">VS</span>
                 <div class="team-box visitante">
                   <span class="score">{{ partido.golesVisitante ?? 0 }}</span>
-                  <span class="team-name">{{ partido.equipoVisitante?.nombre || 'Visitante' }}</span>
+                  <span class="team-name" :title="partido.equipoVisitante?.nombre || 'Visitante'">{{ partido.equipoVisitante?.nombre || 'Visitante' }}</span>
                 </div>
               </div>
 
@@ -266,7 +276,7 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- SECCIÓN 5: AVISOS (Rediseñado Profesional) -->
+    <!-- SECCIÓN 5: AVISOS -->
     <!-- ========================================== -->
     <section v-if="pestañaActiva === 'avisos'" class="avisos-section-modern">
       <div class="avisos-header-banner">
@@ -591,6 +601,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLigaStore } from '@/stores/ligaStore'
 import { useAuthStore } from '@/stores/authStore'
+
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const route = useRoute()
 const router = useRouter()
@@ -991,6 +1004,163 @@ const eliminarAviso = async (id) => {
   }
 }
 
+async function descargarTablaPDF() {
+  if (!tablaPosiciones.value || tablaPosiciones.value.length === 0) return
+
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+
+  const nombreLiga = ligaStore.ligaActual?.nombre || 'Liga de Fútbol'
+  const categoriaLiga = ligaStore.ligaActual?.categoria || 'Categoría General'
+  const logoLiga = ligaStore.ligaActual?.logo || ''
+
+  const fechaActual = new Date().toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+
+  // ==========================================
+  // 1. LOGO EN LA PARTE SUPERIOR IZQUIERDA
+  // ==========================================
+  const logoX = 14
+  const logoY = 12
+  const logoSize = 22
+
+  if (logoLiga) {
+    try {
+      // Detecta formato si es Base64 (PNG o JPEG)
+      const formato = logoLiga.includes('image/png') ? 'PNG' : 'JPEG'
+      doc.addImage(logoLiga, formato, logoX, logoY, logoSize, logoSize)
+    } catch (error) {
+      dibujarLogoPorDefecto(doc, logoX, logoY, logoSize)
+    }
+  } else {
+    dibujarLogoPorDefecto(doc, logoX, logoY, logoSize)
+  }
+
+  // ==========================================
+  // 2. NOMBRE DE LA LIGA Y CATEGORÍA (SALTO DE LÍNEA)
+  // ==========================================
+  const textX = logoX + logoSize + 6 // Posición a la derecha del logo
+
+  // Nombre de la Liga
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(15, 23, 42)
+  doc.text(nombreLiga.toUpperCase(), textX, 20)
+
+  // Salto de línea -> Categoría
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  doc.setTextColor(100, 116, 139)
+  doc.text(`Categoría: ${categoriaLiga}`, textX, 27)
+
+  // Subtítulo de sección y línea separadora
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(37, 99, 235)
+  doc.text('TABLA GENERAL DE POSICIONES', textX, 33)
+
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.5)
+  doc.line(14, 38, pageWidth - 14, 38)
+
+  // ==========================================
+  // 3. TABLA GENERAL DE POSICIONES
+  // ==========================================
+  const columnas = ['Pos', 'Equipo', 'JJ', 'JG', 'JE', 'JP', 'GF', 'GC', 'DG', 'PE', 'Faltas', 'Pts']
+
+  const filas = tablaPosiciones.value.map((eq, index) => [
+    index + 1,
+    eq.nombre,
+    eq.jj || 0,
+    eq.jg || 0,
+    eq.je || 0,
+    eq.jp || 0,
+    eq.gf || 0,
+    eq.gc || 0,
+    eq.dg > 0 ? `+${eq.dg}` : (eq.dg || 0),
+    eq.ptsExtras || 0,
+    eq.faltas || 0,
+    eq.pts || 0
+  ])
+
+  autoTable(doc, {
+    startY: 43,
+    margin: { bottom: 22 }, // Reserva espacio en el fondo para el pie de página
+    head: [columnas],
+    body: filas,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: 255,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { halign: 'center', fontStyle: 'bold', cellWidth: 12 },
+      1: { halign: 'left', fontStyle: 'bold' },
+      2: { halign: 'center' },
+      3: { halign: 'center' },
+      4: { halign: 'center' },
+      5: { halign: 'center' },
+      6: { halign: 'center' },
+      7: { halign: 'center' },
+      8: { halign: 'center' },
+      9: { halign: 'center' },
+      10: { halign: 'center' },
+      11: { halign: 'center', fontStyle: 'bold', textColor: [37, 99, 235] }
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    // ==========================================
+    // 4. PIE DE PÁGINA CON FECHA DE EMISIÓN
+    // ==========================================
+    didDrawPage: (data) => {
+      const footerY = pageHeight - 12
+
+      // Línea divisoria sutil arriba del pie de página
+      doc.setDrawColor(226, 232, 240)
+      doc.setLineWidth(0.4)
+      doc.line(14, footerY - 5, pageWidth - 14, footerY - 5)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      doc.setTextColor(100, 116, 139)
+
+      // Fecha de emisión a la izquierda
+      doc.text(`Fecha de emisión: ${fechaActual}`, 14, footerY)
+
+      // Número de página a la derecha (útil si hay muchos equipos)
+      const totalPaginas = doc.internal.getNumberOfPages()
+      doc.text(`Página ${data.pageNumber} de ${totalPaginas}`, pageWidth - 14, footerY, { align: 'right' })
+    }
+  })
+
+  // Guardar el PDF
+  const nombreArchivo = `Tabla_Posiciones_${nombreLiga.replace(/\s+/g, '_')}.pdf`
+  doc.save(nombreArchivo)
+}
+
+// Función auxiliar por si la liga aún no tiene logo cargado
+function dibujarLogoPorDefecto(doc, x, y, size) {
+  const centerX = x + size / 2
+  const centerY = y + size / 2
+  doc.setFillColor(37, 99, 235)
+  doc.circle(centerX, centerY, size / 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(255, 255, 255)
+  doc.text('LIGA', centerX, centerY + 3, { align: 'center' })
+}
+
 
 </script>
 
@@ -1352,13 +1522,21 @@ const eliminarAviso = async (id) => {
   gap: 0.4rem;
   font-weight: 600;
   font-size: 0.85rem;
-  max-width: 40%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0; /* Vital para permitir que el flexbox comprima y aplique ellipsis correctamente */
 }
 
-.team-box.visitante { flex-direction: row-reverse; }
+.team-box.visitante { 
+  flex-direction: row-reverse; 
+}
+
+.team-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
 
 .score {
   background: #2563eb;
@@ -1366,9 +1544,16 @@ const eliminarAviso = async (id) => {
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
   font-size: 1rem;
+  flex-shrink: 0; /* Evita que el marcador de goles se reduzca o comprima */
 }
 
-.vs-divider { font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
+.vs-divider { 
+  font-size: 0.75rem; 
+  color: #94a3b8; 
+  font-weight: bold; 
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+}
 
 .estatus-pill {
   font-size: 0.65rem;
@@ -1928,7 +2113,7 @@ const eliminarAviso = async (id) => {
 .goleadores-card {
   background: white;
   padding: 1.25rem;
-  border-radius: 12px;
+  border-router: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
 }
@@ -1973,5 +2158,25 @@ const eliminarAviso = async (id) => {
   font-size: 0.8rem;
   color: #475569;
   font-weight: 500;
+}
+/* Contenedor superior de la pestaña posiciones que empuja el botón a la derecha */
+.section-toolbar-posiciones {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem; /* 👈 Espacio / salto de línea antes de la tabla */
+}
+
+@media(min-width: 640px) {
+  .section-toolbar-posiciones {
+    flex-direction: row;
+    justify-content: space-between; /* Título a la izquierda, Botón a la derecha */
+    align-items: center;
+  }
+}
+
+/* Espacio adicional de seguridad para la tabla general */
+.table-wrapper-spaced {
+  margin-top: 0.5rem;
 }
 </style>

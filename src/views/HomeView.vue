@@ -51,8 +51,17 @@
         :class="['liga-card', (authStore.user?.rol === 'capitan' && !capitanTieneAccesoA(liga.id)) ? 'disabled-card' : '']"
       >
         <div class="liga-info" @click="ingresarALiga(liga)" style="cursor: pointer;">
-          <h3>{{ liga.nombre }}</h3>
-          <p class="categoria">Categoría: <strong>{{ liga.categoria }}</strong></p>
+          <!-- ⚽ Cabecera de la tarjeta con Logo y Título -->
+          <div class="liga-card-header-info">
+            <div class="liga-logo-container">
+              <img v-if="liga.logo" :src="liga.logo" alt="Logo Liga" class="liga-logo-img" />
+              <div v-else class="liga-logo-placeholder">⚽</div>
+            </div>
+            <div class="liga-titles">
+              <h3>{{ liga.nombre }}</h3>
+              <p class="categoria">Categoría: <strong>{{ liga.categoria }}</strong></p>
+            </div>
+          </div>
           <p class="equipos-count">⚽ Equipos inscritos: {{ liga.totalEquipos || 0 }}</p>
         </div>
 
@@ -110,6 +119,18 @@
             </select>
           </div>
 
+          <!-- Dentro del formulario de Crear/Editar Liga -->
+          <div class="form-group full-width">
+            <label>Logo de la Liga (Subir desde tu dispositivo)</label>
+            <input type="file" accept="image/*" @change="onFileSelected" class="file-input" />
+            
+            <!-- Vista previa de la imagen seleccionada -->
+            <div v-if="formulario.logo" class="logo-preview-container">
+              <img :src="formulario.logo" alt="Vista previa del logo" class="preview-img" />
+              <span class="preview-text">Logo seleccionado</span>
+            </div>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="cerrarModal">
               Cancelar
@@ -143,7 +164,8 @@ const equiposGlobales = ref([])
 
 const formulario = ref({
   nombre: '',
-  categoria: ''
+  categoria: '',
+  logo: ''
 })
 
 onMounted(async () => {
@@ -153,15 +175,20 @@ onMounted(async () => {
 
 function abrirModalCrear() {
   modoEdicion.value = false
-  formulario.value = { nombre: '', categoria: '' }
+  formulario.value = { nombre: '', categoria: '', logo: '' }
   ligaIdEditando.value = null
   mostrarModal.value = true
 }
 
 function abrirModalEditar(liga) {
   modoEdicion.value = true
-  ligaIdEditando.value = liga.id
-  formulario.value = { nombre: liga.nombre, categoria: liga.categoria }
+  ligaIdEditando.value = liga.id || liga._id
+  // 👇 Añadimos el logo para que se cargue al editar
+  formulario.value = { 
+    nombre: liga.nombre, 
+    categoria: liga.categoria, 
+    logo: liga.logo || '' 
+  }
   mostrarModal.value = true
 }
 
@@ -197,16 +224,26 @@ const ligasVisibles = computed(() => {
 async function guardarLiga() {
   if (!formulario.value.nombre || !formulario.value.categoria) return
 
-   if (modoEdicion.value) {
-    await ligaStore.actualizarLiga(ligaIdEditando.value, formulario.value)
-  } else {
-    const datosNuevaLiga = {
-      nombre: formulario.value.nombre,
-      categoria: formulario.value.categoria,
-      ownerEmail: authStore.user?.email || ''
-    }
-    await ligaStore.crearLiga(datosNuevaLiga)
+  // Imprimimos en consola qué es lo que se va a enviar exactamente
+  console.log("3. Datos a enviar en guardarLiga:", {
+    nombre: formulario.value.nombre,
+    categoria: formulario.value.categoria,
+    logoLength: formulario.value.logo ? formulario.value.logo.length : 0
+  })
+
+  const datosPayload = {
+    nombre: formulario.value.nombre,
+    categoria: formulario.value.categoria,
+    ownerEmail: authStore.user?.email || '',
+    logo: formulario.value.logo || ''
   }
+
+  if (modoEdicion.value) {
+    await ligaStore.actualizarLiga(ligaIdEditando.value, datosPayload)
+  } else {
+    await ligaStore.crearLiga(datosPayload)
+  }
+  
   cerrarModal()
   await ligaStore.obtenerLigas()
 }
@@ -242,6 +279,30 @@ async function obtenerTodosLosEquiposGlobales() {
     }
   } catch (error) {
     console.error('Error al obtener equipos globales para validación:', error)
+  }
+}
+
+// Función para convertir la imagen del dispositivo a Base64
+function onFileSelected(event) {
+  const file = event.target.files[0]
+  if (file) {
+    console.log("1. Archivo seleccionado:", file.name, file.type, file.size)
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen es demasiado pesada. Elige una menor a 2 MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      formulario.value.logo = e.target.result // Asigna el Base64
+      console.log("2. Logo convertido a Base64 con éxito. Primeros caracteres:", formulario.value.logo.substring(0, 30))
+    }
+    reader.readAsDataURL(file)
   }
 }
 </script>
@@ -560,5 +621,55 @@ async function obtenerTodosLosEquiposGlobales() {
   text-align: center;
   color: #94a3b8;
   padding: 3rem 0;
+}
+/* Estilos para el logo en la tarjeta de la liga */
+.liga-card-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.liga-logo-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+.liga-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.liga-logo-placeholder {
+  font-size: 1.25rem;
+}
+
+.liga-titles h3 {
+  margin: 0 0 0.2rem 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.liga-titles .categoria {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.liga-info .equipos-count {
+  color: #475569;
+  font-size: 0.85rem;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
 }
 </style>
