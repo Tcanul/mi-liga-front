@@ -414,8 +414,8 @@
               <div class="form-group"><label>JP</label><input v-model.number="formulario.jp" type="number" min="0" /></div>
               <div class="form-group"><label>GF</label><input v-model.number="formulario.gf" type="number" min="0" /></div>
               <div class="form-group"><label>GC</label><input v-model.number="formulario.gc" type="number" min="0" /></div>
-              <div class="form-group"><label>PE</label><input v-model.number="formulario.ptsExtras" type="number" min="0" /></div>
-              <div class="form-group"><label>Faltas</label><input v-model.number="formulario.faltas" type="number" min="0" /></div>
+              <div class="form-group"><label>PE</label><input v-model.number="formulario.ptsExtras" type="number" min="0" :disabled="!ligaStore.ligaActual?.usaPuntosExtras" /></div>
+              <div class="form-group"><label>Faltas</label><input v-model.number="formulario.faltas" type="number" min="0" :disabled="!ligaStore.ligaActual?.usaFaltas"/></div>
             </div>
           </div>
 
@@ -490,33 +490,36 @@
           </div>
 
           <!-- ⚽ SELECTORES DINÁMICOS PARA GOLEADORES LOCALES -->
-          <div v-if="formResultado.golesLocal > 0" class="seccion-goleadores">
-            <h4>Goleadores de {{ partidoEditando?.equipoLocal?.nombre }}</h4>
-            <div v-for="(n, index) in formResultado.golesLocal" :key="'loc-' + index" class="form-group">
-              <label>Gol {{ index + 1 }}</label>
-              <select v-model="formResultado.goleadoresLocal[index]" required>
-                <option :value="null" disabled>Selecciona el jugador</option>
-                <option v-for="jugador in jugadoresLocal" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
-                  {{ jugador.nombre }} (#{{ jugador.dorsal }})
-                </option>
-              </select>
+          <div v-if="ligaStore.ligaActual?.usaCampeonGoleo && formResultado.golesLocal > 0" class="seccion-goleadores">
+            <div v-if="formResultado.golesLocal > 0" class="seccion-goleadores">
+              <h4>Goleadores de {{ partidoEditando?.equipoLocal?.nombre }}</h4>
+              <div v-for="(n, index) in formResultado.golesLocal" :key="'loc-' + index" class="form-group">
+                <label>Gol {{ index + 1 }}</label>
+                <select v-model="formResultado.goleadoresLocal[index]" required>
+                  <option :value="null" disabled>Selecciona el jugador</option>
+                  <option v-for="jugador in jugadoresLocal" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
+                    {{ jugador.nombre }} (#{{ jugador.dorsal }})
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
 
           <!-- ⚽ SELECTORES DINÁMICOS PARA GOLEADORES VISITANTES -->
-          <div v-if="formResultado.golesVisitante > 0" class="seccion-goleadores">
-            <h4>Goleadores de {{ partidoEditando?.equipoVisitante?.nombre }}</h4>
-            <div v-for="(n, index) in formResultado.golesVisitante" :key="'vis-' + index" class="form-group">
-              <label>Gol {{ index + 1 }}</label>
-              <select v-model="formResultado.goleadoresVisitante[index]" required>
-                <option :value="null" disabled>Selecciona el jugador</option>
-                <option v-for="jugador in jugadoresVisitante" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
-                  {{ jugador.nombre }} (#{{ jugador.dorsal }})
-                </option>
-              </select>
+          <div v-if="ligaStore.ligaActual?.usaCampeonGoleo && formResultado.golesVisitante > 0" class="seccion-goleadores">
+            <div v-if="formResultado.golesVisitante > 0" class="seccion-goleadores">
+              <h4>Goleadores de {{ partidoEditando?.equipoVisitante?.nombre }}</h4>
+              <div v-for="(n, index) in formResultado.golesVisitante" :key="'vis-' + index" class="form-group">
+                <label>Gol {{ index + 1 }}</label>
+                <select v-model="formResultado.goleadoresVisitante[index]" required>
+                  <option :value="null" disabled>Selecciona el jugador</option>
+                  <option v-for="jugador in jugadoresVisitante" :key="jugador.id || jugador._id" :value="jugador.id || jugador._id">
+                    {{ jugador.nombre }} (#{{ jugador.dorsal }})
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
-
           <div class="form-group" style="margin-top: 1rem;">
             <label>Estatus del Partido</label>
             <select v-model="formResultado.estatus" required>

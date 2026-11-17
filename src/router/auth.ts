@@ -17,4 +17,20 @@ const router = createRouter({
   routes
 });
 
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token') // O usa tu authStore.token
+
+  // Si la ruta es exclusiva para invitados (como el login) y ya hay sesión activa:
+  //if (to.meta.guestOnly && token) {
+  //  return next({ path: '/' }) // Lo mandamos al home o dashboard
+  //}
+
+  // Si la ruta requiere autenticación y NO hay sesión:
+  if (to.meta.requiresAuth && !token) {
+    return next({ path: '/login' })
+  }
+
+  next() // Continuar normalmente
+})
+
 export default router;

@@ -1,7 +1,6 @@
 <template>
   <div id="app">
-    <!-- Navbar superior condicional (Solo se muestra si hay sesión) -->
-    <nav v-if="authStore.user" class="navbar">
+    <nav class="navbar" v-if="mostrarNavbar">
       <div class="nav-brand">🏆 Sistema Ligas</div>
       <div class="nav-user">
         <span style="margin-right: 20px">Hola <strong>{{ authStore.user.nombre }} </strong> ({{ authStore.user.rol }})</span>
@@ -15,15 +14,27 @@
 </template>
 
 <script setup>
-import { RouterView, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+
+// Validamos estrictamente cuándo mostrar el navbar superior
+const mostrarNavbar = computed(() => {
+  const esLogin = route.path.startsWith('/login')
+  const esPublico = route.path === '/' // La tabla general pública
+  
+  // Si hay usuario logueado, NO estamos en el login, y NO estamos en la raíz pública (opcional, adáptalo si quieres que se vea en el home)
+  // O simplemente ocultarlo si es estrictamente el login:
+  return authStore.user !== null && !esLogin && !esPublico
+})
 
 function cerrarSesion() {
   authStore.logout()
-  router.push('/')
+  router.push('/login')
 }
 </script>
 

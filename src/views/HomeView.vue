@@ -131,6 +131,37 @@
             </div>
           </div>
 
+          <div class="form-group-checkboxes" style="margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+            <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Configuración de la Liga:</label>
+            
+            <div class="checkbox-item" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <input type="checkbox" v-model="formulario.usaFaltas" id="chkFaltas" />
+              <label for="chkFaltas" style="font-weight: normal; margin: 0; cursor: pointer;">¿Utiliza control de faltas / puntos en contra?</label>
+              <tooltip-info 
+                titulo="Control de Faltas" 
+                descripcion="Permite aplicar deducciones o puntos en contra a un equipo por motivos reglamentarios, tales como alineaciones indebidas, acumulación de faltas o sanciones disciplinarias."
+              />
+            </div>
+
+            <div class="checkbox-item" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <input type="checkbox" v-model="formulario.usaPuntosExtras" id="chkPtsExtras" />
+              <label for="chkPtsExtras" style="font-weight: normal; margin: 0; cursor: pointer;">¿Utiliza puntos extras?</label>
+              <tooltip-info 
+                titulo="Control de Puntos extras" 
+                descripcion="Habilita la asignación de bonificaciones o puntajes adicionales a los equipos bajo criterios específicos de la liga (por ejemplo, puntos otorgados tras un empate reglamentario, recompensas al liderato u otras reglas especiales)."
+              />
+            </div>
+
+            <div class="checkbox-item" style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" v-model="formulario.usaCampeonGoleo" id="chkGoleo" />
+              <label for="chkGoleo" style="font-weight: normal; margin: 0; cursor: pointer;">¿Utiliza tabla y campeón de goleo?</label>
+              <tooltip-info 
+                titulo="Control de Campeón de Goleo" 
+                descripcion="Activa o desactiva el registro y seguimiento individual de anotadores. Si se deshabilita, la liga omitirá la sección de tabla de goleo al no otorgar premios o estadísticas por goles individuales."
+              />
+            </div>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="cerrarModal">
               Cancelar
@@ -150,6 +181,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLigaStore } from '@/stores/ligaStore'
 import { useAuthStore } from '@/stores/authStore'
+import TooltipInfo from './tooltipInfo.vue'
 
 const router = useRouter()
 const ligaStore = useLigaStore()
@@ -165,7 +197,10 @@ const equiposGlobales = ref([])
 const formulario = ref({
   nombre: '',
   categoria: '',
-  logo: ''
+  logo: '',
+  usaFaltas: true,
+  usaPuntosExtras: true,
+  usaCampeonGoleo: true
 })
 
 onMounted(async () => {
@@ -175,7 +210,14 @@ onMounted(async () => {
 
 function abrirModalCrear() {
   modoEdicion.value = false
-  formulario.value = { nombre: '', categoria: '', logo: '' }
+  formulario.value = { 
+      nombre: '', 
+      categoria: '', 
+      logo: '', 
+      usaFaltas: true, 
+      usaPuntosExtras: true,
+      usaCampeonGoleo: true 
+    }
   ligaIdEditando.value = null
   mostrarModal.value = true
 }
@@ -187,7 +229,10 @@ function abrirModalEditar(liga) {
   formulario.value = { 
     nombre: liga.nombre, 
     categoria: liga.categoria, 
-    logo: liga.logo || '' 
+    logo: liga.logo || '',
+    usaFaltas: liga.usaFaltas ?? true,
+    usaPuntosExtras: liga.usaPuntosExtras ?? true,
+    usaCampeonGoleo: liga.usaCampeonGoleo ?? true
   }
   mostrarModal.value = true
 }
@@ -236,7 +281,10 @@ async function guardarLiga() {
     nombre: formulario.value.nombre,
     categoria: formulario.value.categoria,
     ownerEmail: authStore.user?.email || '',
-    logo: formulario.value.logo || ''
+    logo: formulario.value.logo || '',
+    usaFaltas: formulario.value.usaFaltas,
+    usaPuntosExtras: formulario.value.usaPuntosExtras,
+    usaCampeonGoleo: formulario.value.usaCampeonGoleo
   }
 
   if (modoEdicion.value) {

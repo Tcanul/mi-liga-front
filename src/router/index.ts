@@ -10,20 +10,21 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-    path: '/',
-    name: 'HomePublica',
-    component: TablaGeneralPublica
+      path: '/',
+      name: 'HomePublica',
+      component: TablaGeneralPublica
     },
     {
       path: '/login',
       name: 'login',
-      component: LoginView
+      component: LoginView,
+      meta: { guestOnly: true } // 👈 Evita que usuarios con sesión entren aquí
     },
     {
       path: '/homeView',
       name: 'home',
       component: HomeView,
-      meta: { requiresAuth: true } // Requiere estar logueado
+      meta: { requiresAuth: true }
     },
     {
       path: '/liga/:id',
@@ -41,17 +42,21 @@ const router = createRouter({
   ]
 })
 
-// Guardia global para proteger rutas según el rol o sesión
-router.beforeEach((to, from, next) => {
+// Guardia global para proteger rutas según la sesión
+router.beforeEach((to, _, next) => {
   const authStore = useAuthStore()
   const token = authStore.token
 
-  if (to.meta.requiresAuth && !token) {
-    // Si la ruta requiere sesión y no hay token, manda al Login
-    next({ name: 'login' })
-  } else {
-    next()
-  }
-})
+  // 1. Si la ruta es exclusiva para invitados (login) y YA tiene token, mandarlo al inicio
+  //if (to.meta.guestOnly && token) {
+  //  return next({ name: 'HomePublica' }) // O puedes mandarlo a '/homeView'
+  //}
 
+  // 2. Si la ruta requiere autenticación y NO hay token, mandar al login
+  if (to.meta.requiresAuth && !token) {
+    return next({ name: 'login' })
+  }
+
+  next()
+})
 export default router
