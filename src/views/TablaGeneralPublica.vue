@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <!-- 📢 SECCIÓN DE AVISOS ACTIVOS DE LA LIGA (GRIDVIEW - COLOCADA DEBAJO DE LA TABLA) -->
+      <!-- 📢 SECCIÓN DE AVISOS ACTIVOS DE LA LIGA -->
       <div v-if="avisosActivos.length > 0" class="avisos-public-section">
         <h3 class="avisos-section-title">📢 Avisos Oficiales del Torneo</h3>
         <div class="avisos-grid-public">
@@ -111,7 +111,6 @@
             <div class="aviso-card-text">
               <p>{{ aviso.texto }}</p>
             </div>
-            <!-- Botón condicional si el texto es extenso -->
             <div v-if="aviso.texto && aviso.texto.length > 120" class="aviso-card-action">
               <button class="btn-leer-mas" @click="abrirPopupAviso(aviso)">Ver completo</button>
             </div>
@@ -119,7 +118,7 @@
         </div>
       </div>
 
-      <!-- 🗓️ SECCIÓN DE ROL DE JUEGOS / PARTIDOS (GRIDVIEW POR JORNADA) -->
+      <!-- 🗓️ SECCIÓN DE ROL DE JUEGOS / PARTIDOS (LISTADO ESTRUCTURADO POR JORNADA) -->
       <div class="rol-public-section">
         <div class="rol-header-bar">
           <h3>🗓️ Rol de Partidos por Jornada</h3>
@@ -140,54 +139,97 @@
           No hay partidos programados para la Jornada {{ jornadaSeleccionada }}.
         </div>
 
-        <div v-else class="partidos-grid-public">
-          <div v-for="partido in partidosJornada" :key="partido._id" class="partido-public-card">
-            <!-- Si es un registro de descanso -->
-            <div v-if="partido.equipoDescansa" class="partido-descanso-content">
-              <span class="icon-descanso">☕</span>
-              <p>Descansa en esta jornada:</p>
-              <h4>{{ partido.equipoDescansa.nombre || 'Equipo' }}</h4>
-            </div>
+        <div v-else class="table-responsive rol-list-wrapper">
+          <table class="rol-list-table">
+            <thead>
+              <tr>
+                <th class="text-right">Equipo Local</th>
+                <th class="text-center">Marcador</th>
+                <th class="text-center">VS</th>
+                <th class="text-center">Marcador</th>
+                <th class="text-left">Equipo Visitante</th>
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Hora</th>
+                <th class="text-center">Estatus</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="partido in partidosJornada" :key="partido._id">
+                <!-- Fila si es un registro de descanso -->
+                <tr v-if="partido.equipoDescansa" class="rol-descanso-row">
+                  <td colspan="8" class="text-center">
+                    <span class="icon-descanso-inline">☕</span>
+                    Descansa en esta jornada: <strong>{{ partido.equipoDescansa.nombre || 'Equipo' }}</strong>
+                  </td>
+                </tr>
 
-            <!-- Partido Normal -->
-            <div v-else class="partido-normal-content">
-              <div class="partido-info-top">
-                <span class="partido-datetime">📅 {{ partido.fecha || 'S/F' }} - ⏰ {{ partido.hora || 'S/H' }}</span>
-                <span :class="['partido-estatus-pill', partido.estatus || 'pendiente']">
-                  {{ (partido.estatus || 'pendiente').toUpperCase() }}
-                </span>
-              </div>
+                <!-- Fila de Partido Normal (8 columnas) -->
+                <tr v-else class="rol-match-row">
+                  <!-- Columna 1: Equipo 1 (Local) -->
+                  <td class="rol-team-cell local">
+                    <div class="rol-team-wrapper local">
+                      <span class="match-team-name" :title="partido.equipoLocal?.nombre">
+                        {{ partido.equipoLocal?.nombre || 'Local' }}
+                      </span>
+                      <span 
+                        v-if="partido.equipoLocal?.logo" 
+                        class="match-team-logo" 
+                        :style="{ backgroundImage: `url(${partido.equipoLocal.logo})` }"
+                      ></span>
+                      <span v-else class="match-logo-placeholder">⚽</span>
+                    </div>
+                  </td>
 
-              <div class="partido-scoreboard-public">
-                <!-- Equipo Local -->
-                <div class="team-side local">
-                  <span 
-                    v-if="partido.equipoLocal?.logo" 
-                    class="match-team-logo" 
-                    :style="{ backgroundImage: `url(${partido.equipoLocal.logo})` }"
-                  ></span>
-                  <span v-else class="match-logo-placeholder">⚽</span>
-                  <span class="match-team-name" :title="partido.equipoLocal?.nombre">{{ partido.equipoLocal?.nombre || 'Local' }}</span>
-                  <span class="match-score">{{ partido.golesLocal ?? 0 }}</span>
-                </div>
+                  <!-- Columna 2: Marcador Local -->
+                  <td class="text-center">
+                    <span class="match-score">{{ partido.golesLocal ?? 0 }}</span>
+                  </td>
 
-                <!-- Símbolo VS -->
-                <div class="vs-badge-public">VS</div>
+                  <!-- Columna 3: Versus -->
+                  <td class="text-center">
+                    <span class="vs-badge-public">VS</span>
+                  </td>
 
-                <!-- Equipo Visitante -->
-                <div class="team-side visitante">
-                  <span class="match-score">{{ partido.golesVisitante ?? 0 }}</span>
-                  <span class="match-team-name" :title="partido.equipoVisitante?.nombre">{{ partido.equipoVisitante?.nombre || 'Visitante' }}</span>
-                  <span 
-                    v-if="partido.equipoVisitante?.logo" 
-                    class="match-team-logo" 
-                    :style="{ backgroundImage: `url(${partido.equipoVisitante.logo})` }"
-                  ></span>
-                  <span v-else class="match-logo-placeholder">⚽</span>
-                </div>
-              </div>
-            </div>
-          </div>
+                  <!-- Columna 4: Marcador Visitante -->
+                  <td class="text-center">
+                    <span class="match-score">{{ partido.golesVisitante ?? 0 }}</span>
+                  </td>
+
+                  <!-- Columna 5: Equipo 2 (Visitante) -->
+                  <td class="rol-team-cell visitante">
+                    <div class="rol-team-wrapper visitante">
+                      <span 
+                        v-if="partido.equipoVisitante?.logo" 
+                        class="match-team-logo" 
+                        :style="{ backgroundImage: `url(${partido.equipoVisitante.logo})` }"
+                      ></span>
+                      <span v-else class="match-logo-placeholder">⚽</span>
+                      <span class="match-team-name" :title="partido.equipoVisitante?.nombre">
+                        {{ partido.equipoVisitante?.nombre || 'Visitante' }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- Columna 6: Fecha -->
+                  <td class="text-center rol-meta-cell">
+                    📅 {{ partido.fecha || 'S/F' }}
+                  </td>
+
+                  <!-- Columna 7: Hora -->
+                  <td class="text-center rol-meta-cell">
+                    ⏰ {{ partido.hora || 'S/H' }}
+                  </td>
+
+                  <!-- Columna 8: Estatus del partido -->
+                  <td class="text-center">
+                    <span :class="['partido-estatus-pill', partido.estatus || 'pendiente']">
+                      {{ (partido.estatus || 'pendiente').toUpperCase() }}
+                    </span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </div>
     </main>
@@ -265,7 +307,6 @@ const tablaPosiciones = computed(() => {
   })
 })
 
-// Al cargar el componente, traemos la lista de ligas públicas
 onMounted(async () => {
   cargando.value = true
   try {
@@ -275,7 +316,6 @@ onMounted(async () => {
     const dataLigas = await resLigas.json()
     ligas.value = Array.isArray(dataLigas) ? dataLigas : (dataLigas.ligas || dataLigas.data || [])
 
-    // Si hay ligas, seleccionamos la primera y cargamos sus datos y partidos
     if (ligas.value.length > 0) {
       const primeraLiga = ligas.value[0]
       ligaSeleccionadaId.value = primeraLiga._id || primeraLiga.id
@@ -288,14 +328,12 @@ onMounted(async () => {
   }
 })
 
-// Función unificada cuando el usuario cambia de liga en el combo
 const cambiarLiga = async () => {
   if (!ligaSeleccionadaId.value) return
   jornadaSeleccionada.value = 1
   await cargarDatosLiga(ligaSeleccionadaId.value)
 }
 
-// Carga en paralelo los equipos, avisos y partidos de la jornada de la liga seleccionada
 const cargarDatosLiga = async (ligaId) => {
   cargando.value = true
   try {
@@ -311,7 +349,6 @@ const cargarDatosLiga = async (ligaId) => {
   }
 }
 
-// Trae los equipos de la liga seleccionada
 const cargarEquiposDeLiga = async (ligaId) => {
   const response = await fetch(`${API_URL}/api/ligas/${ligaId}/equipos`)
   if (!response.ok) throw new Error('Error al obtener los equipos de la liga')
@@ -319,7 +356,6 @@ const cargarEquiposDeLiga = async (ligaId) => {
   equiposDeLiga.value = Array.isArray(data) ? data : (data.equipos || data.data || [])
 }
 
-// Trae los avisos creados por la liga desde el backend
 const cargarAvisosPublicos = async (ligaId) => {
   try {
     const response = await fetch(`${API_URL}/api/ligas/${ligaId}/avisos`)
@@ -335,7 +371,6 @@ const cargarAvisosPublicos = async (ligaId) => {
   }
 }
 
-// Carga los partidos del rol de juegos filtrados por la liga actual y la jornada seleccionada
 const cargarPartidosJornada = async () => {
   if (!ligaSeleccionadaId.value) return
   cargandoPartidos.value = true
@@ -355,7 +390,6 @@ const cargarPartidosJornada = async () => {
   }
 }
 
-// Métodos para controlar el popup de lectura de avisos largos
 const abrirPopupAviso = (aviso) => {
   avisoSeleccionado.value = aviso
   modalAvisoAbierto.value = true
@@ -429,7 +463,7 @@ const cerrarPopupAviso = () => {
 /* Main Content */
 .main-content {
   flex: 1;
-  max-width: 1000px;
+  max-width: 1050px;
   width: 100%;
   margin: 0 auto;
   padding: 2.5rem 1rem;
@@ -571,7 +605,7 @@ const cerrarPopupAviso = () => {
   text-decoration: underline;
 }
 
-/* 🗓️ ESTILOS DE LA SECCIÓN DE PARTIDOS / ROL DE JUEGOS */
+/* 🗓️ ESTILOS DE LA SECCIÓN DE PARTIDOS / ROL DE JUEGOS (LISTA / TABLA) */
 .rol-public-section {
   background: #1e293b;
   border: 1px solid #334155;
@@ -626,77 +660,73 @@ const cerrarPopupAviso = () => {
   cursor: pointer;
 }
 
-.partidos-grid-public {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
-
-.partido-public-card {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid #334155;
+.rol-list-wrapper {
   border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.partido-descanso-content {
-  text-align: center;
-  color: #f59e0b;
-  padding: 1rem 0;
-}
-
-.icon-descanso {
-  font-size: 2rem;
-}
-
-.partido-info-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid #334155;
-  padding-bottom: 0.4rem;
-}
-
-.partido-estatus-pill {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 9999px;
-}
-
-.partido-estatus-pill.pendiente { background: #fef3c7; color: #d97706; }
-.partido-estatus-pill.completado { background: #d1fae5; color: #059669; }
-.partido-estatus-pill.suspendido { background: #fee2e2; color: #dc2626; }
-
-.partido-scoreboard-public {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(30, 41, 59, 0.6);
-  padding: 0.75rem;
-  border-radius: 8px;
   border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.6);
 }
 
-.team-side {
+.rol-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.rol-list-table th {
+  background: #0f172a;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 0.75rem;
+  border-bottom: 2px solid #334155;
+}
+
+.rol-list-table td {
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid #334155;
+  vertical-align: middle;
+}
+
+.rol-match-row:hover {
+  background: rgba(52, 211, 153, 0.05);
+}
+
+.rol-list-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rol-descanso-row {
+  background: rgba(245, 158, 11, 0.08);
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+.icon-descanso-inline {
+  margin-right: 0.4rem;
+}
+
+.rol-team-cell {
+  min-width: 165px;
+}
+
+.rol-team-wrapper {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  max-width: 42%;
-  overflow: hidden;
+  gap: 0.6rem;
 }
 
-.team-side.visitante {
-  flex-direction: row-reverse;
+.rol-team-wrapper.local {
+  justify-content: flex-end;
+}
+
+.rol-team-wrapper.visitante {
+  justify-content: flex-start;
 }
 
 .match-team-logo {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
@@ -705,8 +735,8 @@ const cerrarPopupAviso = () => {
 }
 
 .match-logo-placeholder {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #334155;
   display: flex;
@@ -717,30 +747,54 @@ const cerrarPopupAviso = () => {
 }
 
 .match-team-name {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #f1f5f9;
+  max-width: 160px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .match-score {
+  display: inline-block;
+  min-width: 28px;
   background: #059669;
   color: white;
-  padding: 0.1rem 0.5rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 6px;
   font-size: 0.95rem;
-  font-weight: bold;
+  font-weight: 800;
 }
 
 .vs-badge-public {
   font-size: 0.75rem;
-  font-weight: bold;
+  font-weight: 800;
   color: #94a3b8;
+  background: #0f172a;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #334155;
 }
 
-/* Tarjeta de la Tabla */
+.rol-meta-cell {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.partido-estatus-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+.partido-estatus-pill.pendiente { background: #fef3c7; color: #d97706; }
+.partido-estatus-pill.completado { background: #d1fae5; color: #059669; }
+.partido-estatus-pill.suspendido { background: #fee2e2; color: #dc2626; }
+
+/* Tarjeta de la Tabla de Posiciones */
 .table-card {
   background: #1e293b;
   border-radius: 16px;
@@ -782,13 +836,10 @@ const cerrarPopupAviso = () => {
 }
 
 /* Detalles específicos de celdas */
-.text-center {
-  text-align: center;
-}
-
-.fw-bold {
-  font-weight: 700;
-}
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+.fw-bold { font-weight: 700; }
 
 .pos-badge {
   display: inline-block;
@@ -845,17 +896,9 @@ const cerrarPopupAviso = () => {
   color: #f1f5f9;
 }
 
-.text-positive {
-  color: #34d399;
-}
-
-.text-negative {
-  color: #f87171;
-}
-
-.pts-col {
-  color: #34d399 !important;
-}
+.text-positive { color: #34d399; }
+.text-negative { color: #f87171; }
+.pts-col { color: #34d399 !important; }
 
 .pts-val {
   font-weight: 800;
