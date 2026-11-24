@@ -126,7 +126,7 @@
           <div class="jornada-public-selector">
             <label for="jornada-select">Jornada:</label>
             <select id="jornada-select" v-model.number="jornadaSeleccionada" @change="cargarPartidosJornada">
-              <option v-for="j in 20" :key="j" :value="j">Jornada {{ j }}</option>
+              <option v-for="j in 30" :key="j" :value="j">Jornada {{ j }}</option>
             </select>
           </div>
         </div>
