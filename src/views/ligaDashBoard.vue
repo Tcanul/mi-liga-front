@@ -169,7 +169,7 @@
         <div class="jornada-selector">
           <label><strong>Jornada:</strong></label>
           <select v-model.number="jornadaSeleccionada" @change="cargarRolJornada">
-            <option v-for="j in 20" :key="j" :value="j">Jornada {{ j }}</option>
+            <option v-for="j in 30" :key="j" :value="j">Jornada {{ j }}</option>
           </select>
         </div>
 
